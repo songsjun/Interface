@@ -41,6 +41,7 @@ export const UnstakeModal = ({
 	const transactionState = useMyTransactionState(txId, true);
 	const [useMax, setUseMax] = useState(false);
 
+	// stabilityDeposit.currentLUSD.add(depositAmount),
 	const [validChange, description] = validateStabilityDepositChange(
 		stabilityDeposit,
 		(stabilityDeposit.currentLUSD.lte(unstakeAmount) || useMax) ? Decimal.ZERO : stabilityDeposit.currentLUSD.sub(unstakeAmount),
@@ -115,7 +116,7 @@ export const UnstakeModal = ({
 					allowSwap={false}
 					valueForced={valueForced}
 					onInput={handleInputUnstake}
-					max={Number(accountBalance.toString())}
+					max={Number(stabilityDeposit.currentLUSD)}
 					warning={undefined}
 					error={errorMessages && (errorMessages.string || t(errorMessages.key!, errorMessages.values))}
 					allowReduce={true}
