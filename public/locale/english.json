@@ -166,5 +166,7 @@
 	"telegram": "Telegram",
 	"stabilityPoolPoints": "Stability Pool",
 	"lpPoints": "LP Points",
-	"referralsPoints": "Referrals"
+	"referralsPoints": "Referrals",
+	"minimumLoanReached": "Minimum WEN loan reached",
+	"minimumLoanReachedSo": "Minimum WEN loan reached. Increase loan amount or close the vault completely."
 }
