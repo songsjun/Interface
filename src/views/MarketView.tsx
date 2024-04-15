@@ -590,9 +590,10 @@ export const MarketView = ({
 								style={{
 									textAlign: "center",
 									width: "100%"
-								}}>
+								}}
+								title={maxAvailableRepay.lt(0.01) ? t("minimumLoanReachedSo") : ""}>
 								{maxAvailableRepay.lt(0.01)
-									? t("available2Repay") + ": " + maxAvailableRepay.toString(2)
+									? t("minimumLoanReached")
 									: (lusdBalance.eq(0) && " " + WEN.symbol + " " + t("balance") + ": 0")}
 							</div>}
 						</div>
