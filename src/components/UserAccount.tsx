@@ -163,7 +163,9 @@ export const UserAccount = ({
     </div> */}
 
     {pointObject.lps?.length > 0 && pointObject.lps.map((lp: LPScoreObject) => {
-      return <div className="flex-row-space-between points">
+      return <div
+        key={lp.name}
+        className="flex-row-space-between points">
         <div className="label">
           {/* <span>&nbsp;•&nbsp;</span> */}
 

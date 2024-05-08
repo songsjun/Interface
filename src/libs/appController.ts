@@ -151,9 +151,9 @@ export const appController: {
 										lpScoreRes.users.forEach((element: any) => {
 											myUsersPoints += (
 												Number(element.point.point)
-												+ ((Number(element.user.balance.balance) + Number(element.user.staking?.amount || 0)) / 10 ** 18)
+												+ ((Number(element.balance.balance) + Number(element.staking?.amount || 0)) / 10 ** 18)
 												* lpConfig.pointsPerHour
-												* Math.floor((Date.now() - element.user.point.timestamp * 1000) / 3600000)
+												* Math.floor((Date.now() - element.point.timestamp * 1000) / 3600000)
 											);
 										});
 									}
@@ -205,6 +205,7 @@ export const appController: {
 					(data: any) => {
 						// 基础积分 = subgraph里的point字段 + AMOUNT * (当前时间 - timestamp ) * 10 / 3600000
 						if (data.user) {
+
 							const p = Number(data.user.point.point);
 							if (!isNaN(p)) stabilityScore = p;
 
