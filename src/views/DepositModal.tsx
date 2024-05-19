@@ -278,7 +278,7 @@ export const DepositeModal = ({
 
 			setDesireNetDebt(nextNetDebt);
 		}
-	}, [trove, depositValue, price, borrowValue]);
+	}, [trove, depositValue, price, borrowValue, useMaxBalance]);
 
 	const handleInputDeposit = (val: number) => {
 		setValueForced(-1);
