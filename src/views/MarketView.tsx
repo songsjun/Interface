@@ -2,7 +2,7 @@
 /* eslint-disable react-hooks/rules-of-hooks */
 import { useLang } from "../hooks/useLang";
 import { Coin, JsonObject, TroveChangeData, TroveChangeTx, VaultStatus4Contract, VaultStatus4Subgraph } from "../libs/types";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { IOTX, TroveOptions, WEN, globalContants } from "../libs/globalContants";
 import { IconButton } from "../components/IconButton";
 import { DropdownMenu } from "../components/DropdownMenu";
@@ -42,7 +42,7 @@ export const MarketView = ({
 		price,
 		accountBalance,
 		lusdBalance
-	} = magmaData; 
+	} = magmaData;
 	if (!magmaData) return <></>;
 
 	const vault: Vault = magmaData.vault;
@@ -95,10 +95,12 @@ export const MarketView = ({
 	const troveUtilizationRate = vault.collateral.gt(0) ? troveDebtValue.dividedBy(troveCollateralValue).toNumber() : 0;
 	const troveUtilizationRate100 = troveUtilizationRate * 100;
 	const RADIAN = Math.PI / 180;
-	const chartData = [
-		{ name: '', value: troveUtilizationRate100 },
-		{ name: '', value: 100 - troveUtilizationRate100 }
-	];
+	const chartData = useMemo(() => {
+		return [
+			{ id: 0, name: '', value: troveUtilizationRate100 },
+			{ id: 1, name: '', value: 100 - troveUtilizationRate100 }
+		]
+	}, [troveUtilizationRate100]);
 	const COLORS = ['#7ecf29', '#2b2326'];
 	const needle = (value: number, cx: number, cy: number, color: string | undefined) => {
 		const ang = value;
@@ -296,7 +298,7 @@ export const MarketView = ({
 		<div
 			id="marketView"
 			className="marketView marketViewLayout">
-			<div>
+			<div style={{ width: "100%" }}>
 				{vault.status !== VaultStatus4Contract.active && vault.status !== VaultStatus4Subgraph.open && <div className="card">
 					<img className="illustration" src="images/1wen=1usd.png" />
 
@@ -387,11 +389,11 @@ export const MarketView = ({
 										dataKey="value"
 										startAngle={0}
 										endAngle={360}>
-										{chartData.map((entry, index) => (
-											<Cell
-												key={index}
+										{chartData.map((entry, index) => {
+											return <Cell
+												key={entry.id}
 												fill={COLORS[index % COLORS.length]} />
-										))}
+										})}
 									</Pie>
 
 									{needle(mcrPercent * 360, 50, 50, '#F25454')}
@@ -474,7 +476,7 @@ export const MarketView = ({
 							className="flex-column-align-right"
 							style={{ gap: "5px" }}>
 							<button
-								className="primaryButton"
+								className="secondaryButton"
 								onClick={handleBorrow}
 								disabled={availableBorrow.lt(0.01)}>
 								<img src="images/borrow-dark.png" />
@@ -664,7 +666,7 @@ export const MarketView = ({
 			<div>
 				<div className="flex-row-align-left">
 					<div style={{
-						color: "#FE8C00",
+						color: "#32CAFD",
 						fontSize: "x-large"
 					}}>●</div>
 
@@ -673,7 +675,7 @@ export const MarketView = ({
 
 				<div className="flex-row-align-left">
 					<div style={{
-						color: "#F25454",
+						color: "#F038CA",
 						fontSize: "x-large"
 					}}>●</div>
 
@@ -695,12 +697,12 @@ export const MarketView = ({
 
 					<defs>
 						<linearGradient id="colorUv" x1="0" y1="0" x2="0" y2="1">
-							<stop offset="5%" stopColor="#FE8C00" stopOpacity={0.8} />
-							<stop offset="95%" stopColor="#FE8C00" stopOpacity={0.3} />
+							<stop offset="5%" stopColor="#32CAFD" stopOpacity={1} />
+							<stop offset="95%" stopColor="#32CAFD" stopOpacity={0.3} />
 						</linearGradient>
 						<linearGradient id="colorPv" x1="0" y1="0" x2="0" y2="1">
-							<stop offset="5%" stopColor="#F25454" stopOpacity={0.8} />
-							<stop offset="95%" stopColor="#F25454" stopOpacity={0.3} />
+							<stop offset="5%" stopColor="#F038CA" stopOpacity={1} />
+							<stop offset="95%" stopColor="#F038CA" stopOpacity={0.3} />
 						</linearGradient>
 					</defs>
 
@@ -714,9 +716,9 @@ export const MarketView = ({
 
 					<Tooltip formatter={formatTooltipValue} />
 
-					<Area type="monotone" dataKey="debtAfter" stroke="#F25454CC" fillOpacity={1} fill="url(#colorPv)" />
+					<Area type="monotone" dataKey="collateralAfter" stroke="#32CAFDcc" fillOpacity={1} fill="url(#colorUv)" />
 
-					<Area type="monotone" dataKey="collateralAfter" stroke="#FE8C00cc" fillOpacity={1} fill="url(#colorUv)" />
+					<Area type="monotone" dataKey="debtAfter" stroke="#F038CAcc" fillOpacity={1} fill="url(#colorPv)" />
 				</AreaChart>
 			</div>
 		</div>}

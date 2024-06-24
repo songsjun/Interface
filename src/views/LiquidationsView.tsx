@@ -18,7 +18,7 @@ export const LiquidationsView = ({ magmaData, refreshTrigger }: {
 		</div>
 
 		<RiskyTroves
-			pageSize={7}
+			pageSize={2}
 			constants={magmaData}
 			refreshTrigger={refreshTrigger} />
 	</div>

@@ -1,4 +1,3 @@
-/// <reference types="vitest" />
 var _a;
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";

@@ -1,9 +1,9 @@
 import { useMemo } from "react";
-import { Coin, StabilityTransactionRecord, TroveChangeTx, TroveOperation } from "../libs/types";
+import { StabilityTransactionRecord } from "../libs/types";
 import { Badge } from "../components/Badge";
 import { BadgeType, WEN, globalContants } from "../libs/globalContants";
-import { Decimal } from "lib-base";
 import { useLiquity } from "../hooks/LiquityContext";
+import { formatNumber } from "../utils";
 
 export const StabilityTransactionListItem = ({ data }: {
 	data: StabilityTransactionRecord;
@@ -37,7 +37,7 @@ export const StabilityTransactionListItem = ({ data }: {
 			</div>}
 
 			{amount !== 0 && <div className="label smallLabel">
-				{(amount < 0 ? "-" : "") + Decimal.from(Math.abs(amount)).shorten()}&nbsp;{globalContants.USD}
+				{(amount < 0 ? "-" : "") + formatNumber(Math.abs(amount))}&nbsp;{globalContants.USD}
 			</div>}
 		</div>
 	</a>

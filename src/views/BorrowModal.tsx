@@ -33,7 +33,7 @@ export const BorrowModal = ({
 	liquidationPoint,
 	availableWithdrawal,
 	availableBorrow,
-	ccr
+	ccr,
 }: {
 	isOpen: boolean;
 	onClose: () => void;
@@ -292,7 +292,7 @@ export const BorrowModal = ({
 			style={{ width: "100%" }}
 			disabled={borrowAmount.lte(0) || sending || borrowAmount.gt(availableBorrow) || recoveryMode}
 			onClick={handleBorrow}>
-			<img src="images/borrow-dark.png" />
+			<img src="images/borrow-white.png" />
 
 			{sending ? t("borrowing") + "..." : t("borrow")}
 		</button>

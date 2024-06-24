@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-empty-function */
-import { DappContract } from "./DappContract.";
+import { DappContract } from "./DappContract";
 import appConfig from "../appConfig.json";
 import { ApproxHintObject, Coin, JsonObject, StabilityDeposit, VaultStatus, Vaultish, callRequest } from "./types";
 import MultiTroveGetterAbi from "../abis/MultiTroveGetter.json";
@@ -39,7 +39,7 @@ export const magma: {
 	_borrowingRate: number;
 	_wenGasCompensation: BigNumber;
 	init: (chainId: number, signer: JsonRpcSigner, account?: string) => void;
-	getVaults: (forceReload: boolean, doneCallback?: (vs: Vault[]) => void) => void;
+	getVaults: (forceReload: boolean, fromIndex: number, doneCallback?: (vs: Vault[]) => void) => void;
 	getMagmaData: () => Promise<Record<string, any> | undefined>;
 	getVaultByOwner: (owner: string) => Promise<Vault | undefined>;
 	findHintsForNominalCollateralRatio: (nominalCollateralRatio: number, ownAddress?: string) => Promise<[string, string]>;
@@ -52,6 +52,7 @@ export const magma: {
 	swap: (wenAmount: BigNumber, collateralPrice: number, onWait?: (tx: string) => void, onFail?: (error: Error | any) => void, onDone?: (tx: string) => void) => Promise<void>;
 	getRedemptionFeeWithDecay: (amount: BigNumber) => Promise<BigNumber>;
 	getTotalCollateralRatio: (collateralToken?: Coin) => number;
+	liquidate: (onWait?: (tx: string) => void, onFail?: (error: Error | any) => void, onDone?: (tx: string) => void) => void;
 	_readyContracts: () => void;
 	_getMagmaDataStep1: () => Promise<void>;
 	_getMagmaDataStep2: () => Promise<void>;
@@ -87,12 +88,10 @@ export const magma: {
 		return this.magmaData;
 	},
 
-	getVaults: function (forceReload = false, doneCallback) {
+	getVaults: function (forceReload = false, fromIndex = 0, doneCallback) {
 		if (this.vaults.length === 0 || forceReload) {
-			const query = graphqlAsker.requestVaults();
+			const query = graphqlAsker.requestVaults(fromIndex);
 			graphqlAsker.ask(this._currentChainId, query, (data: any) => {
-				console.debug("xxx 原始数据", data, query);
-
 				if (data?.troves) {
 					data.troves.forEach((vault: JsonObject) => {
 						this.vaults.push(
@@ -476,12 +475,10 @@ export const magma: {
 		let res = await this._hintHelpersContract?.dappFunctions.getRedemptionHints.call(wenAmount.toFixed(), BigNumber(collateralPrice).shiftedBy(18).toFixed(), 0);
 		const firstRedemptionHint = res.firstRedemptionHint;
 		const partialRedemptionHintNICR = BigNumber(res.partialRedemptionHintNICR._hex);
-		console.debug("xxx 结果", res, firstRedemptionHint, partialRedemptionHintNICR.toFixed());
 
 		res = await this._sortedTrovesContract?.dappFunctions.findInsertPosition.call(partialRedemptionHintNICR.toFixed(), this._account!, this._account!);
 		const upperPartialRedemptionHint = res[0];
 		const lowerPartialRedemptionHint = res[1];
-		console.debug("xxx 结果", res, upperPartialRedemptionHint, lowerPartialRedemptionHint);
 
 		this._troveManagerContract?.dappFunctions.redeemCollateral.run(
 			onWait,
@@ -513,6 +510,16 @@ export const magma: {
 			1,
 			collateralToken,
 			WEN
+		);
+	},
+
+	liquidate: function (onWait?, onFail?, onDone?): void {
+		this._troveManagerContract?.dappFunctions.liquidate.run(
+			onWait,
+			onFail,
+			onDone,
+			{ from: this._account },
+			this._account
 		);
 	}
 };

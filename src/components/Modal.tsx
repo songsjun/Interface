@@ -19,10 +19,8 @@ export const Modal = ({
         <h2 style={{ maxWidth: "16rem" }}>{title}</h2>
 
         <button
-          className="textButton"
+          className="iconButton"
           onClick={onClose}>
-          {t("close")}
-
           <img src="images/close.png" />
         </button>
       </div>

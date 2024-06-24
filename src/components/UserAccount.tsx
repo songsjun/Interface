@@ -11,6 +11,7 @@ import { useLiquity } from "../hooks/LiquityContext";
 import { parseEther } from "viem";
 import { globalContants } from "../libs/globalContants";
 import { Link } from "react-router-dom";
+import { switchNetwork } from '@wagmi/core';
 
 export const UserAccount = ({
   onConnect = () => { },
@@ -25,13 +26,12 @@ export const UserAccount = ({
   chainId: number;
   chains: Chain[];
   points: number;
-  pointObject: Record<string, any>;
+  pointObject?: Record<string, any>;
 }) => {
   const { publicClient, account } = useLiquity();
   const { t } = useLang();
   const { isConnected, connector } = useAccount();
   const { disconnect } = useDisconnect();
-  const { switchNetwork } = useSwitchNetwork();
   const chain = chains?.find(item => item.id === chainId);
 
   const { error } = usePrepareSendTransaction({
@@ -42,11 +42,13 @@ export const UserAccount = ({
 
   useEffect(() => {
     if (error?.name === "ChainMismatchError" && chainId > 0) {
-      setTimeout(() => {
-        switchNetwork && switchNetwork(globalContants.DEFAULT_NETWORK_ID);
+      setTimeout(async () => {
+        const newChain = await switchNetwork({ chainId: globalContants.DEFAULT_NETWORK_ID });
+        if (newChain.id === chainId) {
+          window.location.reload();
+        }
       }, 3000);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [error, chainId]);
 
   const chainOptions = useMemo(() => {
@@ -68,10 +70,7 @@ export const UserAccount = ({
   };
 
   const entryView = isConnected ? <div className="flex-row-align-left">
-    <img
-      src={"images/" + connector?.name + ".png"}
-      width="21px"
-      height="18px" />
+    <img src={"images/" + connector?.name + ".png"} />
 
     <div
       className="flex-column-align-left"
@@ -107,10 +106,7 @@ export const UserAccount = ({
   </div>
 
   const pointsView = <div className="flex-row-align-left">
-    <img
-      src="images/magma.png"
-      height="18px"
-      style={{ width: "34px" }} />
+    <img src="images/magma.png" />
 
     <div
       className="flex-column-align-left"
@@ -163,7 +159,9 @@ export const UserAccount = ({
     </div> */}
 
     {pointObject.lps?.length > 0 && pointObject.lps.map((lp: LPScoreObject) => {
-      return <div className="flex-row-space-between points">
+      return <div
+        key={lp.name}
+        className="flex-row-space-between points">
         <div className="label">
           {/* <span>&nbsp;•&nbsp;</span> */}
 
@@ -209,18 +207,15 @@ export const UserAccount = ({
 
   return (
     <div className="topBar">
-      <img
+      {/* <img
         className="logoOnTopBar"
         src="images/magma.png"
-        height="32px" />
-
-      <span>&nbsp;</span>
+        height="32px" /> */}
+      <div>&nbsp;</div>
 
       {!isConnected && <div className="flex-row-align-left">
         <div className="selectionTrigger">
-          <img
-            src="images/iotx.png"
-            width="24px" />
+          <img src="images/iotx.png" />
 
           <div
             className="flex-column-align-left"
@@ -257,9 +252,7 @@ export const UserAccount = ({
             alignTop
             forcedClass="selectionTrigger">
             <div className="flex-row-align-left">
-              <img
-                src="images/iotx.png"
-                width="24px" />
+              <img src="images/iotx.png" />
 
               <div
                 className="flex-column-align-left"

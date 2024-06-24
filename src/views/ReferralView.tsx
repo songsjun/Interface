@@ -1,19 +1,20 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { useLang } from "../hooks/useLang";
 // import { useMyTransactionState, useTransactionFunction } from "../components/Transaction";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useLiquity } from "../hooks/LiquityContext";
 import appConfig from "../appConfig.json";
 import { DepositByReferrer, JsonObject } from "../libs/types";
-import { Decimal } from "lib-base";
-import { StabilityPool } from "lib-ethers/dist/types";
-import { useContract } from "../hooks/useContract";
-import StabilityPoolAbi from "lib-ethers/abi/StabilityPool.json";
-import { MAGMA, WEN, globalContants } from "../libs/globalContants";
+// import { Decimal } from "lib-base";
+// import { StabilityPool } from "lib-ethers/dist/types";
+// import { useContract } from "../hooks/useContract";
+// import StabilityPoolAbi from "lib-ethers/abi/StabilityPool.json";
+import { WEN, globalContants } from "../libs/globalContants";
 import copy from "copy-to-clipboard";
-import { DappContract } from "../libs/DappContract.";
+import { DappContract } from "../libs/DappContract";
 import refererFactory from "../abis/refererFactory.json";
 import { shortenAddress } from "../utils";
+import BigNumber from "bignumber.js";
 // import { ethers } from "ethers";
 // import { EthersSigner } from "lib-ethers";
 
@@ -37,9 +38,9 @@ export const ReferralView = ({
 	// const txId = useMemo(() => String(Date.now()), []);
 	// const transactionState = useMyTransactionState(txId, true);
 	const [loading, setLoading] = useState(false);
-	const kickbackRate = Decimal.from((appConfig.refer.kickbackRate as JsonObject)[String(chainId)]);
+	const kickbackRate = BigNumber((appConfig.refer.kickbackRate as JsonObject)[String(chainId)]);
 	const [errorMessage, setErrorMessage] = useState("");
-	const [frontendRewards, setFrontendRewards] = useState(Decimal.ZERO);
+	const [frontendRewards, setFrontendRewards] = useState(globalContants.BIG_NUMBER_0);
 	const [copied, setCopied] = useState(false);
 	const refererFactoryAddress = (appConfig.refer.refererFactory as JsonObject)[String(chainId)];
 
@@ -48,24 +49,24 @@ export const ReferralView = ({
 	// 	liquity.send.registerFrontend.bind(liquity.send, kickbackRate)
 	// );
 
-	const [stabilityPoolDefault, stabilityPoolStatus] = useContract<StabilityPool>(
-		liquity.connection.addresses.stabilityPool,
-		StabilityPoolAbi
-	);
+	// const [stabilityPoolDefault, stabilityPoolStatus] = useContract<StabilityPool>(
+	// 	liquity.connection.addresses.stabilityPool,
+	// 	StabilityPoolAbi
+	// );
 
-	useEffect(() => {
-		const read = async () => {
-			if (stabilityPoolStatus === "LOADED" && account) {
-				// const res = await stabilityPoolDefault?.getFrontEndLQTYGain(account);
-				const res = await stabilityPoolDefault?.getFrontEndLQTYGain(referrer);
-				if (res) {
-					setFrontendRewards(Decimal.from(res.toString()).div(MAGMA.decimals));
-				}
-			}
-		};
+	// useEffect(() => {
+	// 	const read = async () => {
+	// 		if (stabilityPoolStatus === "LOADED" && account) {
+	// 			// const res = await stabilityPoolDefault?.getFrontEndLQTYGain(account);
+	// 			const res = await stabilityPoolDefault?.getFrontEndLQTYGain(referrer);
+	// 			if (res) {
+	// 				setFrontendRewards(BigNumber(res.toString()).dividedBy(MAGMA.decimals));
+	// 			}
+	// 		}
+	// 	};
 
-		read();
-	}, [account, stabilityPoolDefault, stabilityPoolStatus]);
+	// 	read();
+	// }, [account, stabilityPoolDefault, stabilityPoolStatus]);
 
 	const handleRegisterFrontend = async () => {
 		if (!chainId || !provider || kickbackRate?.eq(0) || !signer || !refererFactoryAddress) return;

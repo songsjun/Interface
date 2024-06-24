@@ -1,4 +1,4 @@
-import { DappContract } from "./DappContract.";
+import { DappContract } from "./DappContract";
 import { callRequest } from "./types";
 
 export const multicaller: {

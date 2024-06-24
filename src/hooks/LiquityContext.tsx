@@ -1,17 +1,6 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { Provider } from "@ethersproject/abstract-provider";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import { BaseProvider, JsonRpcSigner } from "@ethersproject/providers";
-import { PublicClient, WalletClient, useAccount, useChainId, usePublicClient, useWalletClient } from "wagmi";
-
-import {
-  BlockPolledLiquityStore,
-  EthersLiquity,
-  EthersLiquityWithStore,
-  _connectByChainId
-} from "lib-ethers";
-
-import { LiquityFrontendConfig, getConfig } from "../config";
-import { BatchedProvider } from "../providers/BatchingProvider";
+import { PublicClient, useAccount, useChainId, usePublicClient, useWalletClient } from "wagmi";
 import { useEthersProvider, useEthersSigner } from "../libs/ethers";
 import { VoidSigner, ethers } from "ethers";
 import { globalContants } from "../libs/globalContants";
@@ -19,11 +8,7 @@ import { graphqlAsker } from "../libs/graphqlAsker";
 import { zeroAddress } from "viem";
 
 type LiquityContextValue = {
-  config: LiquityFrontendConfig;
   account: string | undefined;
-  provider: Provider;
-  liquity: EthersLiquityWithStore<BlockPolledLiquityStore>;
-  walletClient?: WalletClient;
   chainId: number;
   publicClient?: PublicClient;
   urlSearch?: string;
@@ -34,16 +19,13 @@ type LiquityContextValue = {
 const LiquityContext = createContext<LiquityContextValue | undefined>(undefined);
 
 type LiquityProviderProps = {
+  children: React.ReactNode;
   loader?: React.ReactNode;
-  unsupportedNetworkFallback?: React.ReactNode;
-  // unsupportedMainnetFallback?: React.ReactNode;
 };
 
 export const LiquityProvider: React.FC<LiquityProviderProps> = ({
   children,
-  loader,
-  unsupportedNetworkFallback,
-  // unsupportedMainnetFallback
+  loader
 }) => {
   const { isConnected, address } = useAccount();
   const signer = useWalletClient();
@@ -56,7 +38,6 @@ export const LiquityProvider: React.FC<LiquityProviderProps> = ({
   const refParam = url.searchParams.get("ref");
   const testAccount = url.searchParams.get("testacc"); // 用参数中的其它地址进行测试。
   const addr = isConnected ? (testAccount ?? address) : globalContants.ADDRESS_PLACEHOLDER;
-
   let customProvider: BaseProvider | undefined;
   let customSigner: VoidSigner | undefined;
   if (!isConnected) {
@@ -66,12 +47,9 @@ export const LiquityProvider: React.FC<LiquityProviderProps> = ({
   }
   const provider = isConnected ? wagmiProvider : customProvider;
   const signerData = isConnected ? signer.data : customSigner;
-
-  const [config, setConfig] = useState<LiquityFrontendConfig>({} as LiquityFrontendConfig);
-
   const [frontendTag, setFrontendTag] = useState(zeroAddress);
   useEffect(() => {
-    if (!config || !refParam || chainId === 0) return;
+    if (!refParam || chainId === 0) return;
 
     const query = graphqlAsker.requestRefererWithCode(refParam)
     graphqlAsker.ask(chainId, query, (data: any) => {
@@ -79,62 +57,29 @@ export const LiquityProvider: React.FC<LiquityProviderProps> = ({
 
         const ref = data?.frontends[0].owner.id;
         setFrontendTag(ref);
-        config.frontendTag = ref;
+        window.config = {
+          ...window.config,
+          frontendTag: ref
+        };
       }
     });
-  }, [refParam, chainId, config]);
+  }, [refParam, chainId]);
 
-  const connection = useMemo(() => {
-    if (config && provider && signerData && addr && frontendTag) {
-      const batchedProvider = new BatchedProvider(provider, chainId);
-      // batchedProvider._debugLog = true;
-
-      try {
-        return _connectByChainId(batchedProvider, signerData, chainId, {
-          userAddress: addr,
-          frontendTag: frontendTag,
-          useStore: "blockPolled"
-        });
-      } catch (err) {
-        console.error(err);
-      }
-    }
-  }, [config, provider, signerData, addr, frontendTag, chainId]);
-
-  useEffect(() => {
-    getConfig().then(setConfig);
-  }, []);
-
-  if (isConnected && (!config || !provider || !signerData || !addr)) {
+  if (isConnected && (!provider || !signerData || !addr)) {
     return <>{loader}</>;
   }
 
-  if (!isConnected && !connection) {
-    return <>{unsupportedNetworkFallback}</>;
-  }
-
-  if (connection) {
-    const liquity = EthersLiquity._from(connection);
-    liquity.store.logging = true;
-
-    return <LiquityContext.Provider
-      value={{
-        config,
-        account: addr,
-        provider: connection.provider,
-        liquity,
-        chainId,
-        walletClient: connection.signer as unknown as WalletClient,
-        publicClient,
-        urlSearch,
-        signer: wagmiSinger,
-        frontendTag
-      }}>
-      {children}
-    </LiquityContext.Provider>
-  }
-
-  return <></>
+  return <LiquityContext.Provider
+    value={{
+      account: addr,
+      chainId,
+      publicClient,
+      urlSearch,
+      signer: wagmiSinger,
+      frontendTag
+    }}>
+    {children}
+  </LiquityContext.Provider>
 };
 
 export const useLiquity = () => {

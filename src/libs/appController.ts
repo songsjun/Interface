@@ -7,14 +7,14 @@ import { graphqlAsker } from "./graphqlAsker";
 import { LoadStateErrorType } from "viem/_types/actions/test/loadState";
 
 export const appController: {
-	lang: Langs | null;
+	lang: Langs;
 	worker?: Worker;
 	init: () => void;
 	detectLang: () => void;
 	changeLang: (lng: Langs) => void;
 	relaunch: () => void;
 	employWorkers: (chainId: number, onDone?: () => void) => void;
-	_dbConnector: IDBOpenDBRequest | undefined;
+	_dbConnector: IDBOpenDBRequest;
 	_db: IDBDatabase | undefined;
 	openDB: (chainId: number, onDone: () => void) => void;
 	readAll: (onDone: (arg?: IDBCursor) => void) => void;
@@ -23,9 +23,9 @@ export const appController: {
 	_getLPScore: (chainId: number, user: string) => Promise<{ totalLPScores: number, lpScores: LPScoreObject[] }>;
 	_getUserStabilityAndLpScore: (chainId: number, user: string, onDone: (res: Record<string, any>) => void) => void;
 } = {
-	_dbConnector: undefined,
+	// _dbConnector: undefined,
 	_db: undefined,
-	lang: null,
+	lang: Langs.English,
 
 	init: function () {
 		this.detectLang();
@@ -81,9 +81,12 @@ export const appController: {
 			console.error('数据库打开出错', event);
 		};
 
-		this._dbConnector.onsuccess = () => {
-			this._db = this._dbConnector?.result;
-			return onDone && onDone();
+		this._dbConnector.onsuccess = (res: any) => {
+			if (res) {
+				// this._db = this._dbConnector?.result;
+				this._db = res.target.result as IDBDatabase;
+				return onDone && onDone();
+			}
 		};
 	},
 
@@ -151,9 +154,9 @@ export const appController: {
 										lpScoreRes.users.forEach((element: any) => {
 											myUsersPoints += (
 												Number(element.point.point)
-												+ ((Number(element.user.balance.balance) + Number(element.user.staking?.amount || 0)) / 10 ** 18)
+												+ ((Number(element.balance.balance) + Number(element.staking?.amount || 0)) / 10 ** 18)
 												* lpConfig.pointsPerHour
-												* Math.floor((Date.now() - element.user.point.timestamp * 1000) / 3600000)
+												* Math.floor((Date.now() - element.point.timestamp * 1000) / 3600000)
 											);
 										});
 									}

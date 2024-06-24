@@ -531,6 +531,7 @@ h4 {
     background: var(--surface-card);
     box-shadow: 19px 24px 72px 0px rgba(5, 2, 7, 0.40);
     backdrop-filter: blur(7px);
+    position: relative;
 
     .illustration {
       height: 120px;
@@ -1417,8 +1418,8 @@ input {
     .userAccountBox {
       flex-direction: column-reverse;
       align-items: flex-end;
-      
-      .points{
+
+      .points {
         margin-right: 1rem;
       }
     }

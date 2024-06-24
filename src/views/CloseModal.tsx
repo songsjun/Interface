@@ -14,7 +14,7 @@ import { erc20ABI } from "wagmi";
 import swapAndCloseTool from "../abis/swapAndCloseTool.json";
 import { Vault } from "../libs/Vault";
 import BigNumber from "bignumber.js";
-import { DappContract } from "../libs/DappContract.";
+import { DappContract } from "../libs/DappContract";
 import { magma } from "../libs/magma";
 
 export const CloseModal = ({

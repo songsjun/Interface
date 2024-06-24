@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Langs } from "../libs/globalContants";
 import { appController } from "../libs/appController";
 
-let currentLang: Langs | null = null;
+let currentLang: Langs = Langs.English;
 // let localizedStrings: Record<string, string> | null = null;
 
 export function useLang() {

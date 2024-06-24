@@ -138,7 +138,7 @@ export const DepositeModal = ({
 			onClick={handleExpandBorrow}>
 			{showExpandBorrowView ? t("close") : t("borrow")}
 
-			<img src={showExpandBorrowView ? "images/close.png" : "images/arrow-down-orange.png"} />
+			<img src={showExpandBorrowView ? "images/close-circle.png" : "images/arrow-down-orange.png"} />
 		</button>
 	</div>
 
@@ -179,7 +179,8 @@ export const DepositeModal = ({
 			warning={undefined}
 			allowReduce={true}
 			currentValue={-1}
-			allowIncrease={true} />
+			allowIncrease={true}
+			backgroundColor="#151934" />
 	</div>
 
 	const handleInputDeposit = (val: number) => {

@@ -1,6 +1,6 @@
-import { createApolloFetch } from "apollo-fetch";
 import appConfig from "../appConfig.json";
 import { JsonObject } from "./types";
+import { ApolloClient, InMemoryCache, gql } from "@apollo/client";
 
 export const graphqlAsker = {
 	ask: function (chainId: number, query: string, doneCallback: (data: unknown) => void, graphURL?: string) {
@@ -10,8 +10,11 @@ export const graphqlAsker = {
 			return doneCallback(null);
 		}
 
-		const fetcher = createApolloFetch({ uri });
-		fetcher({ query }).then(result => {
+		const fetcher = new ApolloClient({
+			uri,
+			cache: new InMemoryCache()
+		});
+		fetcher.query({ query: gql`${query}` }).then(result => {
 			const { data, errors } = result;
 			if (!errors && doneCallback) {
 				return doneCallback(data);
@@ -30,8 +33,11 @@ export const graphqlAsker = {
 				return resolve(null);
 			}
 
-			const fetcher = createApolloFetch({ uri });
-			fetcher({ query }).then(result => {
+			const fetcher = new ApolloClient({
+				uri,
+				cache: new InMemoryCache()
+			});
+			fetcher.query({ query: gql`${query}` }).then(result => {
 				const { data, errors } = result;
 				if (!errors) return resolve(data);
 			}).catch(error => {

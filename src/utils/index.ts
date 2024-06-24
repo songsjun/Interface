@@ -1,6 +1,4 @@
-import { Trove, Decimal } from "lib-base";
 import { Abi, Narrow } from "viem";
-import { Vault } from "../libs/Vault";
 import appConfig from "../appConfig.json";
 import { Coin, JsonObject } from "../libs/types";
 import BigNumber from "bignumber.js";
@@ -9,26 +7,26 @@ import assert from "assert";
 
 export const shortenAddress = (address: string, b = 6, e = 4) => address.substr(0, b) + "..." + address.substr(-e);
 
-export const calculateAvailableWithdrawal = (forTrove: Vault, price: number, collRatio?: number, chainId?: number) => {
-	// const collateralRatio: number = collRatio ?? (appConfig.constants as JsonObject)[String(chainId)].MAGMA_CRITICAL_COLLATERAL_RATIO;
-	// const collateralValue = forTrove.collateral.multipliedBy(price);
-	// const debtLine = forTrove.debt.multipliedBy(collateralRatio);
-	// if (collateralValue.gt(debtLine))
-	// 	return collateralValue.minus(debtLine).dividedBy(price);
-	// else
-	// 	return globalContants.BIG_NUMBER_0;
-};
+// export const calculateAvailableWithdrawal = (forTrove: Vault, price: number, collRatio?: number, chainId?: number) => {
+// 	const collateralRatio: number = collRatio ?? (appConfig.constants as JsonObject)[String(chainId)].MAGMA_CRITICAL_COLLATERAL_RATIO;
+// 	const collateralValue = forTrove.collateral.multipliedBy(price);
+// 	const debtLine = forTrove.debt.multipliedBy(collateralRatio);
+// 	if (collateralValue.gt(debtLine))
+// 		return collateralValue.minus(debtLine).dividedBy(price);
+// 	else
+// 		return globalContants.BIG_NUMBER_0;
+// };
 
-export const calculateAvailableBorrow = (forTrove: Vault, price: number, collRatio?: number, chainId?: number) => {
-	// const collateralRatio: number = collRatio ?? (appConfig.constants as JsonObject)[String(chainId)].MAGMA_CRITICAL_COLLATERAL_RATIO;
-	// const collateralValue = forTrove.collateral.multipliedBy(price);
-	// const debtLine = collateralValue.dividedBy(collateralRatio);
-	// const debt = forTrove.debt.gt(1) ? forTrove.netDebt : forTrove.debt;
-	// if (debtLine.gt(debt)) {
-	// 	return debtLine.minus(debt);
-	// } else
-	// 	return globalContants.BIG_NUMBER_0;
-};
+// export const calculateAvailableBorrow = (forTrove: Vault, price: number, collRatio?: number, chainId?: number) => {
+// 	const collateralRatio: number = collRatio ?? (appConfig.constants as JsonObject)[String(chainId)].MAGMA_CRITICAL_COLLATERAL_RATIO;
+// 	const collateralValue = forTrove.collateral.multipliedBy(price);
+// 	const debtLine = collateralValue.dividedBy(collateralRatio);
+// 	const debt = forTrove.debt.gt(1) ? forTrove.netDebt : forTrove.debt;
+// 	if (debtLine.gt(debt)) {
+// 		return debtLine.minus(debt);
+// 	} else
+// 		return globalContants.BIG_NUMBER_0;
+// };
 
 // export const calculateAvailableBorrow = (collateral: BigNumber, netDebt: BigNumber, price: number, collRatio?: number, chainId?: number) => {
 // 	const collateralRatio: number = collRatio ?? (appConfig.constants as JsonObject)[String(chainId)].MAGMA_CRITICAL_COLLATERAL_RATIO;
@@ -41,19 +39,19 @@ export const calculateAvailableBorrow = (forTrove: Vault, price: number, collRat
 // 		return globalContants.BIG_NUMBER_0;
 // };
 
-export const calculateUtilizationRate = (forTrove: Trove, price: Decimal) => {
-	return (forTrove.collateral.gt(0) && forTrove.debt.gt(0)) ? Decimal.ONE.div(forTrove.collateralRatio(price)) : Decimal.ZERO;
-};
+// export const calculateUtilizationRate = (forTrove: Trove, price: Decimal) => {
+// 	return (forTrove.collateral.gt(0) && forTrove.debt.gt(0)) ? Decimal.ONE.div(forTrove.collateralRatio(price)) : Decimal.ZERO;
+// };
 
-export const feeFrom = (original: Trove, edited: Trove, borrowingRate: Decimal): Decimal => {
-	const change = original.whatChanged(edited, borrowingRate);
+// export const feeFrom = (original: Trove, edited: Trove, borrowingRate: Decimal): Decimal => {
+// 	const change = original.whatChanged(edited, borrowingRate);
 
-	if (change && change.type !== "invalidCreation" && change.params.borrowLUSD) {
-		return change.params.borrowLUSD.mul(borrowingRate);
-	} else {
-		return Decimal.ZERO;
-	}
-};
+// 	if (change && change.type !== "invalidCreation" && change.params.borrowLUSD) {
+// 		return change.params.borrowLUSD.mul(borrowingRate);
+// 	} else {
+// 		return Decimal.ZERO;
+// 	}
+// };
 
 export const loadABI = async (url: string): Promise<Narrow<Abi | readonly unknown[]> | undefined> => {
 	try {

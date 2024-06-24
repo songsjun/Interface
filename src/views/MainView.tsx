@@ -2,26 +2,18 @@ import { useEffect, useState } from "react";
 import { ConnectWalletModal } from "./ConnectWalletModal";
 import { SideBar } from "../components/SideBar";
 import { UserAccount } from "../components/UserAccount";
-import { Route, BrowserRouter, Switch, useParams } from "react-router-dom";
+import { Route, BrowserRouter, Routes } from "react-router-dom";
 import { BorrowView } from "./BorrowView";
 import { StakeView } from "./StakeView";
 import { Chain, useAccount, useBalance, useNetwork } from "wagmi";
 import { LiquidationsView } from "./LiquidationsView";
-import { useContract } from "../hooks/useContract";
-import { BorrowerOperations, LUSDToken, TroveManager } from "lib-ethers/dist/types";
 import { useLiquity } from "../hooks/LiquityContext";
-import BorrowerOperationsAbi from "lib-ethers/abi/BorrowerOperations.json";
-import TroveManagerAbi from "lib-ethers/abi/TroveManager.json";
-import LUSDTokenAbi from "lib-ethers/abi/LUSDToken.json";
-import { Decimal } from "lib-base";
-import { WEN, globalContants } from "../libs/globalContants";
+import { globalContants } from "../libs/globalContants";
 import { TermsModal } from "./TermsModal";
 import { ReferralView } from "./ReferralView";
 import { Footer } from "./Footer";
-import { LiquityStoreState } from "lib-base/dist/src/LiquityStore";
-import { useLiquitySelector } from "@liquity/lib-react";
 import { graphqlAsker } from "../libs/graphqlAsker";
-import { DappContract } from "../libs/DappContract.";
+import { DappContract } from "../libs/DappContract";
 import appConfig from "../appConfig.json";
 import { DepositByReferrer, JsonObject } from "../libs/types";
 import refererFactory from "../abis/refererFactory.json";
@@ -31,6 +23,7 @@ import { magma } from "../libs/magma";
 import { JsonRpcSigner } from "@ethersproject/providers";
 import { Vault } from "../libs/Vault";
 import BigNumber from "bignumber.js";
+import { Titlebar } from "./Titlebar";
 
 // const select = ({ vault }: LiquityStoreState) => ({ vault });
 
@@ -42,14 +35,11 @@ export const MainView = ({ chains }: { chains: Chain[] }) => {
 	const isSupportedNetwork = chains.findIndex(item => item.id === chain?.id) >= 0;
 	const { account, chainId, signer } = useLiquity();
 	const [referrer, setReferrer] = useState<string | undefined>(undefined);
-	// const [constants, setConstants] = useState<Record<string, Decimal>>({});
 	const [externalDataDone, setExternalDataDone] = useState(false);
-	// const dec = Math.pow(10, WEN.decimals || 18);
 	const [magmaData, setMagmaData] = useState<Record<string, any>>();
 	const [points, setPoints] = useState(0);
 	const { data } = useBalance({ address: account as Address, chainId });
 	const accountBalance = BigNumber(data?.value.toString() || 0) || globalContants.BIG_NUMBER_0;
-	// const { vault } = useLiquitySelector(select);
 	const [vault, setVault] = useState<Vault>();
 	const [pointObject, setPointObject] = useState<Record<string, number>>();
 	const [isReferrer, setIsReferrer] = useState(false);
@@ -57,21 +47,6 @@ export const MainView = ({ chains }: { chains: Chain[] }) => {
 	const [depositsByReferrer, setDepositsByReferrer] = useState<DepositByReferrer[]>()
 	const haveDeposited = vault?.collateral?.gt(0);
 	const [refresh, setRefresh] = useState(false);
-
-	// const [wenTokenDefault, wenTokenStatus] = useContract<LUSDToken>(
-	// 	liquity.connection.addresses.lusdToken,
-	// 	LUSDTokenAbi
-	// );
-
-	// const [borrowerOperationsDefault, borrowerOperationsStatus] = useContract<BorrowerOperations>(
-	// 	liquity.connection.addresses.borrowerOperations,
-	// 	BorrowerOperationsAbi
-	// );
-
-	// const [troveManagerDefault, troveManagerStatus] = useContract<TroveManager>(
-	// 	liquity.connection.addresses.troveManager,
-	// 	TroveManagerAbi
-	// );
 
 	useEffect(() => {
 		if (chainId === 0) return;
@@ -150,44 +125,6 @@ export const MainView = ({ chains }: { chains: Chain[] }) => {
 		}
 	}, [isConnected]);
 
-	// useEffect(() => {
-	// 	const getContants = async () => {
-	// 		let totalSupply;
-	// 		let minNetDebt;
-	// 		let wenGasGompensation;
-	// 		let mcr;
-	// 		let ccr;
-	// 		let tvl;
-
-	// 		if (borrowerOperationsStatus === "LOADED") {
-	// 			minNetDebt = await borrowerOperationsDefault?.MIN_NET_DEBT()
-	// 			wenGasGompensation = await borrowerOperationsDefault?.LUSD_GAS_COMPENSATION();
-	// 			mcr = await borrowerOperationsDefault?.MCR();
-	// 			ccr = await borrowerOperationsDefault?.CCR();
-	// 		}
-
-	// 		if (wenTokenStatus === "LOADED") {
-	// 			totalSupply = await wenTokenDefault?.totalSupply();
-	// 		}
-
-	// 		if (troveManagerStatus === "LOADED") {
-	// 			tvl = await troveManagerDefault?.getEntireSystemColl();
-	// 		}
-
-	// 		setConstants({
-	// 			...constants,
-	// 			MIN_NET_DEBT: Decimal.from(minNetDebt?.toString() || 0).div(dec),
-	// 			LUSD_GAS_COMPENSATION: Decimal.from(wenGasGompensation?.toString() || 0).div(dec),
-	// 			MCR: Decimal.from(mcr?.toString() || 0).div(dec),
-	// 			wenTotalSupply: Decimal.from(totalSupply?.toString() || 0).div(dec),
-	// 			CCR: Decimal.from(ccr?.toString() || 0).div(dec),
-	// 			TVL: Decimal.from(tvl?.toString() || 0).div(dec),
-	// 		});
-	// 	};
-
-	// 	getContants();
-	// }, [borrowerOperationsDefault, borrowerOperationsStatus, wenTokenStatus, wenTokenDefault, troveManagerStatus, troveManagerStatus]);
-
 	useEffect(() => {
 		if (chainId > 0 && signer && account) {
 			magma.init(chainId, signer as JsonRpcSigner, account);
@@ -228,65 +165,55 @@ export const MainView = ({ chains }: { chains: Chain[] }) => {
 
 	return <>
 		<div className="app">
+			{/* <Titlebar /> */}
+
 			<BrowserRouter>
 				<div style={{
+					width: "100%",
 					display: "flex",
-					flexGrow: 1,
 					flexDirection: "column",
-					alignItems: "center",
-					position: "relative"
+					gap: "1rem",
+					marginTop: "1.5rem"
 				}}>
-					<div style={{
-						width: "100%",
-						display: "flex",
-						flexDirection: "row",
-						justifyContent: "flex-end",
-						alignItems: "center"
-					}}>
-						<UserAccount
-							onConnect={handleConnectWallet}
-							isSupportedNetwork={isSupportedNetwork}
-							chains={chains}
-							chainId={chainId}
-							points={points}
-							pointObject={pointObject} />
-					</div>
+					<UserAccount
+						onConnect={handleConnectWallet}
+						isSupportedNetwork={isSupportedNetwork}
+						chains={chains}
+						chainId={chainId}
+						points={points}
+						pointObject={pointObject} />
 
-					<Switch>
-						<Route path="/stake">
-							<StakeView
+					<Routes>
+						<Route
+							path="/stake"
+							element={<StakeView
 								constants={magmaData}
-								refreshTrigger={switchRefresh} />
-						</Route>
+								refreshTrigger={switchRefresh} />} />
 
-						<Route path="/liquidations">
-							<LiquidationsView
+						<Route
+							path="/liquidations"
+							element={<LiquidationsView
 								magmaData={magmaData}
-								refreshTrigger={switchRefresh} />
-						</Route>
+								refreshTrigger={switchRefresh} />} />
 
-						<Route path="/referral">
-							<ReferralView
+						<Route
+							path="/referral"
+							element={<ReferralView
 								haveDeposited={haveDeposited}
 								isReferrer={isReferrer}
 								referralCode={referralCode}
 								referrer={referrer}
 								deposits={depositsByReferrer}
-								points={points} />
-						</Route>
+								points={points} />} />
 
-						<Route path="/">
-							<BorrowView
+						<Route
+							path="/"
+							element={<BorrowView
 								isReferrer={isReferrer}
 								externalDataDone={externalDataDone}
 								magmaData={magmaData}
-								refreshTrigger={switchRefresh} />
-						</Route>
-
-						{/* <Route path="/bonds">
-							<Bonds />
-						</Route> */}
-					</Switch>
+								refreshTrigger={switchRefresh} />} />
+					</Routes>
 
 					<Footer />
 				</div>

@@ -6,26 +6,14 @@ import { InjectedConnector } from "wagmi/connectors/injected";
 import { WalletConnectConnector } from "wagmi/connectors/walletConnect";
 import { SafeConnector } from "wagmi/connectors/safe"
 import { LiquityProvider } from "./hooks/LiquityContext";
-import { getConfig } from "./config";
 import { LiquityFrontend } from "./LiquityFrontend";
 import { AppLoader } from "./components/AppLoader";
-import { useAsyncValue } from "./hooks/AsyncValue";
 import { appController } from "./libs/appController";
-import { TransactionProvider } from "./components/Transaction";
-
-// Start pre-fetching the config
-getConfig().then(config => {
-  Object.assign(window, { config });
-});
+import { MainView } from "./views/MainView";
 
 const { chains, publicClient, webSocketPublicClient } = configureChains(
   [iotex, iotexTestnet],
-  [
-    publicProvider(),
-    // jsonRpcProvider({
-    //   rpc: (chain) => ({ http: appConfig.rpc[String(chain.id)].http })
-    // })
-  ],
+  [publicProvider()],
   { batch: { multicall: true } }
 );
 
@@ -53,22 +41,17 @@ const wagmiCfg = createConfig({
 });
 
 const App = () => {
-  const config = useAsyncValue(getConfig);
   const loader = <AppLoader />;
 
   useEffect(() => {
     appController.init();
   }, []);
 
-  return config.loaded ? <WagmiConfig config={wagmiCfg}>
+  return <WagmiConfig config={wagmiCfg}>
     <LiquityProvider loader={loader}>
-      {/* <TransactionProvider> */}
-      <LiquityFrontend
-        chains={chains}
-        loader={loader} />
-      {/* </TransactionProvider> */}
+      <MainView chains={chains} />
     </LiquityProvider>
-  </WagmiConfig> : <></>
+  </WagmiConfig>
 };
 
 export default App;

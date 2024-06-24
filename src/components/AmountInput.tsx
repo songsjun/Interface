@@ -16,7 +16,8 @@ export const AmountInput = ({
 	warning,
 	allowReduce = true,
 	currentValue = 0,
-	allowIncrease = true
+	allowIncrease = true,
+	backgroundColor,
 }: {
 	coin: Coin | null;
 	price: number;
@@ -29,6 +30,7 @@ export const AmountInput = ({
 	allowReduce?: boolean;
 	currentValue?: number;
 	allowIncrease?: boolean;
+	backgroundColor?: string;
 }) => {
 	const [inputValue, setInputValue] = useState<string>("");
 	const [fiatValue, setFiatValue] = useState(0);
@@ -77,7 +79,10 @@ export const AmountInput = ({
 	return <div className="amountInputLayout">
 		<div
 			className="flex-row-space-between amountInputBox"
-			style={{ border: error ? "1px solid #F25454" : (warning ? "1px solid #E4BC62" : "") }}>
+			style={{
+				border: error ? "1px solid #F25454" : (warning ? "1px solid #E4BC62" : ""),
+				backgroundColor
+			}}>
 			<div className="flex-row-align-left">
 				<img
 					src={coin?.logo}

@@ -1,12 +1,12 @@
 /* eslint-disable react-hooks/rules-of-hooks */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { formatAsset, formatAssetAmount, shortenAddress } from "../utils";
 import { useLiquity } from "../hooks/LiquityContext";
-import { Icon } from "./Icon";
-import { LoadingOverlay } from "./LoadingOverlay";
-import { Abbreviation } from "./Abbreviation";
+// import { Icon } from "./Icon";
+// import { LoadingOverlay } from "./LoadingOverlay";
+// import { Abbreviation } from "./Abbreviation";
 import { useLang } from "../hooks/useLang";
 import { IOTX, WEN } from "../libs/globalContants";
 import appConfig from "../appConfig.json";
@@ -46,17 +46,51 @@ export const RiskyTroves: React.FC<RiskyTrovesProps> = ({ pageSize, constants })
   const { chainId, publicClient } = useLiquity();
   const [loading, setLoading] = useState(true);
   // const [troves, setTroves] = useState<UserTrove[]>();
-  const [vaults, setVaults] = useState<Vault[]>([]);
+  // const [vaults, setVaults] = useState<Vault[]>([]);
   // const [reload, setReload] = useState(false);
   const [page, setPage] = useState(0);
   const appConfigConstants = (appConfig.constants as JsonObject)[String(chainId)];
   // const mcr = constants?.MCR?.gt(0) ? constants.MCR : Decimal.from((appConfig.constants as JsonObject)[String(chainId)].MAGMA_MINIMUM_COLLATERAL_RATIO);
   const mcr = constants?.MCR > 0 ? constants?.MCR : appConfigConstants.MAGMA_MINIMUM_COLLATERAL_RATIO;
+  // const [fromIndex, setFromIndex] = useState(0);
+  // const [previousBatchCount, setPreviousBatchCount] = useState(0);
+  const [liquidatableVaults, setLiquidatableVaults] = useState<LiquidatableTrove[]>([]);
+  const numberOfTroves = liquidatableVaults?.length || 0;
+  const numberOfPages = Math.ceil(numberOfTroves / pageSize) || 1;
+  const clampedPage = Math.min(page, numberOfPages - 1);
+  // const [resetTx, setResetTx] = useState(false);
+  // const txId = useMemo(() => String(new Date().getTime()), [resetTx]);
+  // const [transactionState, setTransactionState] = useTransactionState();
+  const [showTxDone, setShowTxDone] = useState(false);
+  const [txAmount, setTxAmount] = useState("");
+  const [txHash, setTxHash] = useState("");
 
-  const liquidatableTroves: LiquidatableTrove[] = useMemo(() => {
+  // const nextPage = () => {
+  //   if (clampedPage < numberOfPages - 1) {
+  //     setPage(clampedPage + 1);
+  //   }
+  // };
+
+  // const previousPage = () => {
+  //   if (clampedPage > 0) {
+  //     setPage(clampedPage - 1);
+  //   }
+  // };
+
+  useEffect(() => {
+    if (page !== clampedPage) {
+      setPage(clampedPage);
+    }
+  }, [page, clampedPage]);
+
+  const pickUpLiquidatableVault = useCallback((vs: Vault[]) => {
     const tempArr: LiquidatableTrove[] = [];
-    vaults?.forEach(vault => {
+
+    vs?.forEach(vault => {
       const collateralRatio = vault.collateralRatio(price);
+
+      // (vault as LiquidatableTrove).liquidatable = true; // for testing.
+      // return tempArr.push(vault as LiquidatableTrove); // for testing.
 
       if (recoveryMode) {
         if (collateralRatio > mcr && collateralRatio < totalCollateralRatio) {
@@ -65,7 +99,6 @@ export const RiskyTroves: React.FC<RiskyTrovesProps> = ({ pageSize, constants })
         }
       } else {
         if (collateralRatio < mcr / factor) {
-          // if (collateralRatio < 10) {
           tempArr.push(vault as LiquidatableTrove);
 
           if (collateralRatio < mcr) (vault as LiquidatableTrove).liquidatable = true;
@@ -74,42 +107,31 @@ export const RiskyTroves: React.FC<RiskyTrovesProps> = ({ pageSize, constants })
     });
 
     return tempArr;
-  }, [mcr, price, recoveryMode, totalCollateralRatio, vaults]);
+  }, [mcr, price, recoveryMode, totalCollateralRatio]);
 
-  const numberOfTroves = liquidatableTroves?.length || 0;
-  const numberOfPages = Math.ceil(numberOfTroves / pageSize) || 1;
-  const clampedPage = Math.min(page, numberOfPages - 1);
-  const [resetTx, setResetTx] = useState(false);
-  const txId = useMemo(() => String(new Date().getTime()), [resetTx]);
-  // const [transactionState, setTransactionState] = useTransactionState();
-  const [showTxDone, setShowTxDone] = useState(false);
-  const [txAmount, setTxAmount] = useState("");
-  const [txHash, setTxHash] = useState("");
+  const fetchVaults = useCallback((from = 0) => {
+    magma.getVaults(false, from, vs => {
+      // setPreviousBatchCount(vs?.length);
+      // setVaults(vs);
+      // setLoading(false);
 
-  const nextPage = () => {
-    if (clampedPage < numberOfPages - 1) {
-      setPage(clampedPage + 1);
-    }
-  };
+      const tempVaults = pickUpLiquidatableVault(vs);
+      setLiquidatableVaults([...liquidatableVaults, ...tempVaults]);
 
-  const previousPage = () => {
-    if (clampedPage > 0) {
-      setPage(clampedPage - 1);
-    }
-  };
-
-  useEffect(() => {
-    if (page !== clampedPage) {
-      setPage(clampedPage);
-    }
-  }, [page, clampedPage]);
-
-  useEffect(() => {
-    magma.getVaults(false, vs => {
-      setVaults(vs);
-      setLoading(false);
+      setTimeout(() => {
+        if (liquidatableVaults.length < 20 && vs?.length === 100) {
+          fetchVaults(from + 1);
+        } else {
+          setLoading(false);
+        }
+      }, 1000);
     });
-  }, []);
+  }, [pickUpLiquidatableVault]);
+
+  useEffect(() => {
+    setLoading(true);
+    fetchVaults(0);
+  }, [fetchVaults]);
 
   // useEffect(() => {
   //   let mounted = true;
@@ -197,39 +219,11 @@ export const RiskyTroves: React.FC<RiskyTrovesProps> = ({ pageSize, constants })
 
     setTxAmount(evt.currentTarget.dataset.amount!);
 
-    // const hasMessage = (error: unknown): error is { message: string } =>
-    //   typeof error === "object" &&
-    //   error !== null &&
-    //   "message" in error &&
-    //   typeof (error as { message: unknown }).message === "string";
-
-    // const sendTransaction = async () => {
-    //   setTransactionState({ type: "waitingForApproval", id });
-
-    //   try {
-    //     const tx = await send();
-
-    //     setTransactionState({
-    //       type: "waitingForConfirmation",
-    //       id,
-    //       tx
-    //     });
-    //   } catch (error) {
-    //     if (hasMessage(error) && error.message.includes("User denied transaction signature")) {
-    //       setTransactionState({ type: "cancelled", id } as TransactionState);
-    //     } else {
-    //       console.error(error);
-
-    //       setTransactionState({
-    //         type: "failed",
-    //         id,
-    //         error: new Error("Failed to send transaction (try again)")
-    //       });
-    //     }
-    //   }
-    // };
-
-    // return sendTransaction();
+    magma.liquidate(
+      undefined,
+			undefined,
+			undefined
+    );
   };
 
   const handleCloseTxDone = () => {
@@ -257,16 +251,16 @@ export const RiskyTroves: React.FC<RiskyTrovesProps> = ({ pageSize, constants })
 
 
   return <>
-    {loading && <LoadingOverlay />}
+    {/* {loading && <LoadingOverlay />} */}
 
     {!loading && <div style={{ width: "100%" }}>
       <div className="flex-row-space-between">
         <h3>{t("riskyTroves")}</h3>
       </div>
 
-      {liquidatableTroves && liquidatableTroves.length > 0 && <div className="table">
+      {liquidatableVaults && liquidatableVaults.length > 0 && <div className="table">
         <div className="tableBody">
-          {liquidatableTroves.map((vault: LiquidatableTrove) => {
+          {liquidatableVaults.map((vault: LiquidatableTrove, idx: number) => {
             return <div
               className="tableRow"
               key={vault.owner}>
@@ -304,7 +298,7 @@ export const RiskyTroves: React.FC<RiskyTrovesProps> = ({ pageSize, constants })
               <div className="tableCell">
                 <button
                   data-amount={vault.collateral.toString()}
-                  id={vault.owner}
+                  id={String(idx)}
                   className="secondaryButton"
                   onClick={handleLiquidate}
                   disabled={!vault.liquidatable}>
@@ -317,9 +311,9 @@ export const RiskyTroves: React.FC<RiskyTrovesProps> = ({ pageSize, constants })
         </div>
       </div>}
 
-      {liquidatableTroves?.length === 0 && <p className="description">{t("noLiquidatableTrove")}</p>}
+      {liquidatableVaults?.length === 0 && <p className="description">{t("noLiquidatableTrove")}</p>}
 
-      <div className="paging">
+      {/* <div className="paging">
         {numberOfTroves !== 0 && <>
           <Abbreviation
             short={`page ${clampedPage + 1} / ${numberOfPages}`}
@@ -332,7 +326,6 @@ export const RiskyTroves: React.FC<RiskyTrovesProps> = ({ pageSize, constants })
             className="textButton"
             onClick={previousPage}
             disabled={clampedPage <= 0}>
-            <Icon name="chevron-left" size="lg" />
           </button>
 
           <span>&nbsp;&nbsp;</span>
@@ -341,10 +334,9 @@ export const RiskyTroves: React.FC<RiskyTrovesProps> = ({ pageSize, constants })
             className="textButton"
             onClick={nextPage}
             disabled={clampedPage >= numberOfPages - 1}>
-            <Icon name="chevron-right" size="lg" />
           </button>
         </>}
-      </div>
+      </div> */}
     </div>}
 
     {showTxDone && <TxDone
