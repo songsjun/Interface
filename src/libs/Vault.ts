@@ -1,8 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { IOTX, WEN, globalContants } from "./globalContants";
 import { Coin, JsonObject, VaultStatus, Vaultish } from "./types";
 import { BigNumber } from "bignumber.js";
 import appConfig from "../appConfig.json"
 import { magma } from "./magma";
+import { zeroAddress } from "viem";
 
 export class Vault {
 	public id: string;
@@ -17,6 +19,10 @@ export class Vault {
 	public collateralDecimals = 0;
 
 	private _collateralToken: Coin = IOTX;
+	get collateralToken() {
+		return this._collateralToken;
+	}
+
 	private _loanToken: Coin = WEN;
 	private _gasCompensation = globalContants.BIG_NUMBER_0;
 	private _borrowingRate = 0;
@@ -133,22 +139,57 @@ export class Vault {
 		updatedDebt: BigNumber,
 		onWait?: (tx: string) => void,
 		onFail?: (error: Error | any) => void,
-		onDone?: (tx: string) => void
+		onDone?: (tx: string) => void,
+		market: Coin = IOTX
 	) {
 		const nominalCollateralRatio = Vault.calculateNominalCollateralRatio(updatedCollateral, updatedDebt);
-		const hints = await magma.findHintsForNominalCollateralRatio(nominalCollateralRatio, this.owner);
-		magma.borrowerOperationsContract?.dappFunctions.adjustTrove.run(
-			onWait,
-			onFail,
-			onDone,
-			{ value: deposit.toFixed() },
-			BigNumber(maxFeePercentage).shiftedBy(18).toFixed(),
-			collWithdrawal.toFixed(),
-			debtChange.toFixed(),
-			isDebtIncrease,
-			hints[0],
-			hints[1]
-		);
+		const hints = await magma.findHintsForNominalCollateralRatio(nominalCollateralRatio, this.owner, market);
+		const amount = deposit.toFixed();
+
+		if (this._collateralToken.address && this._collateralToken.address !== zeroAddress) {
+			const func = () => {
+				magma.borrowerOperationsContract?.dappFunctions["adjustTrove(address,uint256,uint256,uint256,uint256,bool,address,address)"].run(
+					onWait,
+					onFail,
+					onDone,
+					undefined,
+					this._collateralToken.address,
+					amount,
+					BigNumber(maxFeePercentage).shiftedBy(18).toFixed(),
+					collWithdrawal.toFixed(),
+					debtChange.toFixed(),
+					isDebtIncrease,
+					hints[0],
+					hints[1]
+				);
+			};
+
+			if (deposit.gt(0)) {
+				magma.tokenContract[this._collateralToken.symbol].dappFunctions.approve.run(
+					undefined,
+					onFail,
+					func,
+					undefined,
+					magma.borrowerOperationsContract?.address,
+					amount
+				);
+			} else {
+				func();
+			}
+		} else {
+			magma.borrowerOperationsContract?.dappFunctions["adjustTrove(uint256,uint256,uint256,bool,address,address)"].run(
+				onWait,
+				onFail,
+				onDone,
+				{ value: amount },
+				BigNumber(maxFeePercentage).shiftedBy(18).toFixed(),
+				collWithdrawal.toFixed(),
+				debtChange.toFixed(),
+				isDebtIncrease,
+				hints[0],
+				hints[1]
+			);
+		}
 	}
 
 	_computeNetDebt() {

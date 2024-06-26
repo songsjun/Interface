@@ -24,6 +24,7 @@ import { JsonRpcSigner } from "@ethersproject/providers";
 import { Vault } from "../libs/Vault";
 import BigNumber from "bignumber.js";
 import { Titlebar } from "./Titlebar";
+import { Dashboard } from "./Dashboard";
 
 // const select = ({ vault }: LiquityStoreState) => ({ vault });
 
@@ -137,7 +138,7 @@ export const MainView = ({ chains }: { chains: Chain[] }) => {
 				if (res) setMagmaData({
 					...res,
 					accountBalance,
-					vault: v,
+					vaults: v,
 					totalCollateralRatio: magma.getTotalCollateralRatio()
 				});
 			};
@@ -187,7 +188,7 @@ export const MainView = ({ chains }: { chains: Chain[] }) => {
 						<Route
 							path="/stake"
 							element={<StakeView
-								constants={magmaData}
+								magmaData={magmaData}
 								refreshTrigger={switchRefresh} />} />
 
 						<Route
@@ -207,12 +208,16 @@ export const MainView = ({ chains }: { chains: Chain[] }) => {
 								points={points} />} />
 
 						<Route
-							path="/"
+							path="/borrow"
 							element={<BorrowView
 								isReferrer={isReferrer}
 								externalDataDone={externalDataDone}
 								magmaData={magmaData}
 								refreshTrigger={switchRefresh} />} />
+
+						<Route
+							path="/"
+							element={<Dashboard magmaData={magmaData} />} />
 					</Routes>
 
 					<Footer />

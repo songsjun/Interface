@@ -24,19 +24,28 @@ export const SideBar: React.FC = ({ children }) => {
       <hr className="division" />
 
       <NavLink
-        label={t("borrow") + " " + WEN.symbol}
-        icon="images/borrow.png"
+        label={t("dashboard")}
+        icon="images/dashboard.png"
         url={"/" + urlSearch}
-        fullWidth={false}
+        fullWidth={true}
         showExternalLink={false}
         active={pathname === "/"}
+        target="_self" />
+
+      <NavLink
+        label={t("borrow") + " " + WEN.symbol}
+        icon="images/borrow.png"
+        url={"/borrow" + urlSearch}
+        fullWidth={true}
+        showExternalLink={false}
+        active={pathname === "/borrow"}
         target="_self" />
 
       <NavLink
         label={t("stake") + " " + WEN.symbol}
         icon="images/stake.png"
         url={"/stake" + urlSearch}
-        fullWidth={false}
+        fullWidth={true}
         showExternalLink={false}
         active={pathname === "/stake"}
         target="_self" />
@@ -45,7 +54,7 @@ export const SideBar: React.FC = ({ children }) => {
         label={t("governance")}
         icon="images/governance.png"
         url=""
-        fullWidth={false}
+        fullWidth={true}
         showExternalLink={false}
         active={pathname === "/governance"} /> */}
 
@@ -53,7 +62,7 @@ export const SideBar: React.FC = ({ children }) => {
         label={t("liquidations")}
         icon="images/liquidations.png"
         url={"/liquidations" + urlSearch}
-        fullWidth={false}
+        fullWidth={true}
         showExternalLink={false}
         active={pathname === "/liquidations"}
         target="_self" />
@@ -62,7 +71,7 @@ export const SideBar: React.FC = ({ children }) => {
         label={" " + t("referral")}
         icon="images/referral.png"
         url={"/referral" + urlSearch}
-        fullWidth={false}
+        fullWidth={true}
         showExternalLink={false}
         active={pathname === "/referral"}
         target="_self" />

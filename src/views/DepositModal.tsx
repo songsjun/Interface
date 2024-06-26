@@ -138,7 +138,7 @@ export const DepositeModal = ({
 			onClick={handleExpandBorrow}>
 			{showExpandBorrowView ? t("close") : t("borrow")}
 
-			<img src={showExpandBorrowView ? "images/close-circle.png" : "images/arrow-down-orange.png"} />
+			<img src={showExpandBorrowView ? "images/close.png" : "images/arrow-down-orange.png"} />
 		</button>
 	</div>
 

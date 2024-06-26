@@ -3,7 +3,6 @@
 import { DappContract } from "./DappContract";
 import appConfig from "../appConfig.json";
 import { ApproxHintObject, Coin, JsonObject, StabilityDeposit, VaultStatus, Vaultish, callRequest } from "./types";
-import MultiTroveGetterAbi from "../abis/MultiTroveGetter.json";
 import { Vault } from "./Vault";
 import { graphqlAsker } from "./graphqlAsker";
 import { IOTX, WEN, globalContants } from "./globalContants";
@@ -12,6 +11,7 @@ import multicallAbi from "../abis/multicall.json";
 import troveManagerAbi from "../abis/TroveManager.json";
 import priceFeedAbi from "../abis/PriceFeed.json";
 import lusdTokenAbi from "../abis/LUSDToken.json";
+import sysConfigAbi from "../abis/SysConfig.json";
 import borrowerOperationsAbi from "../abis/BorrowerOperations.json";
 import sortedTrovesAbi from "../abis/SortedTroves.json";
 import hintHelpersAbi from "../abis/HintHelpers.json";
@@ -19,40 +19,50 @@ import stabilityPoolAbi from "../abis/StabilityPool.json";
 import { JsonRpcSigner } from "@ethersproject/providers";
 import { providers } from 'ethers';
 import { multicaller } from "./multicaller";
-import { generateTrials, randomInteger } from "../utils";
+import { formatAssetAmount, generateTrials, randomInteger } from "../utils";
+import { zeroAddress } from "viem";
+import { erc20ABI } from "wagmi";
 
 export const magma: {
 	borrowerOperationsContract?: DappContract;
 	magmaData: Record<string, any>;
 	vaults: Vault[];
+	tokens: Record<string, Coin>;
 	_account: string;
 	_currentChainId: number;
 	_magmaCfg: JsonObject;
+	_tokensAsKey: string[];
 	_multicallContract?: DappContract;
 	_lusdTokenContract?: DappContract;
-	_sortedTrovesContract?: DappContract;
-	_hintHelpersContract?: DappContract;
-	_troveManagerContract?: DappContract;
+	_sysConfigContract?: DappContract;
+	_sortedTrovesContract: Record<string, DappContract>;
+	_hintHelpersContract: Record<string, DappContract>;
+	_troveManagerContract: Record<string, DappContract>;
+	_tokenContract: Record<string, DappContract>;
+	tokenContract: Record<string, DappContract>;
 	_priceFeedContract?: DappContract;
-	_stabilityPoolContract?: DappContract;
+	_stabilityPoolContract: Record<string, DappContract>;
 	_signer?: providers.JsonRpcSigner;
-	_borrowingRate: number;
+	_borrowingRate: Record<string, number>;
 	_wenGasCompensation: BigNumber;
 	init: (chainId: number, signer: JsonRpcSigner, account?: string) => void;
 	getVaults: (forceReload: boolean, fromIndex: number, doneCallback?: (vs: Vault[]) => void) => void;
 	getMagmaData: () => Promise<Record<string, any> | undefined>;
 	getVaultByOwner: (owner: string) => Promise<Vault | undefined>;
-	findHintsForNominalCollateralRatio: (nominalCollateralRatio: number, ownAddress?: string) => Promise<[string, string]>;
+	findHintsForNominalCollateralRatio: (nominalCollateralRatio: number, ownAddress?: string, market?: Coin) => Promise<[string, string]>;
 	wouldBeRecoveryMode: (collateral: BigNumber, debt: BigNumber, collateralPrice: number, loanPrice: number, collateralToken: Coin, loanToken: Coin) => boolean;
 	computeFee: () => number;
 	openVault: (vault: Vault, maxFeePercentage: number, debtChange: BigNumber, deposit: BigNumber, onWait?: (tx: string) => void, onFail?: (error: Error | any) => void, onDone?: (tx: string) => void) => void;
 	closeVault: (onWait?: (tx: string) => void, onFail?: (error: Error | any) => void, onDone?: (tx: string) => void) => void;
-	stake: (amount: BigNumber, frontendTag: string, onWait?: (tx: string) => void, onFail?: (error: Error | any) => void, onDone?: (tx: string) => void) => void;
-	unstake: (amount: BigNumber, onWait?: (tx: string) => void, onFail?: (error: Error | any) => void, onDone?: (tx: string) => void) => void;
+	stake: (token: Coin, amount: BigNumber, frontendTag: string, onWait?: (tx: string) => void, onFail?: (error: Error | any) => void, onDone?: (tx: string) => void) => void;
+	unstake: (token: Coin, amount: BigNumber, onWait?: (tx: string) => void, onFail?: (error: Error | any) => void, onDone?: (tx: string) => void) => void;
 	swap: (wenAmount: BigNumber, collateralPrice: number, onWait?: (tx: string) => void, onFail?: (error: Error | any) => void, onDone?: (tx: string) => void) => Promise<void>;
 	getRedemptionFeeWithDecay: (amount: BigNumber) => Promise<BigNumber>;
 	getTotalCollateralRatio: (collateralToken?: Coin) => number;
 	liquidate: (onWait?: (tx: string) => void, onFail?: (error: Error | any) => void, onDone?: (tx: string) => void) => void;
+	calculateTVL: () => number;
+	calculateTotalWENStaked: () => number;
+	_readyTokens: () => void;
 	_readyContracts: () => void;
 	_getMagmaDataStep1: () => Promise<void>;
 	_getMagmaDataStep2: () => Promise<void>;
@@ -62,18 +72,42 @@ export const magma: {
 	_loadingData: false,
 	_currentChainId: globalContants.DEFAULT_NETWORK_ID,
 	_magmaCfg: {},
+	_tokensAsKey: [],
 	vaults: [],
-	magmaData: {},
-	_borrowingRate: 0,
+	tokens: {},
+	magmaData: {
+		price: {},
+		vaultsCount: {},
+		borrowingRateWithDecay: {},
+		stabilityDeposit: {},
+		lusdInStabilityPool: {},
+		entireSystemColl: {},
+		TVL: {},
+		entireSystemDebt: {},
+		recoveryMode: {},
+		balance: {}
+	},
+	_borrowingRate: {},
 	_wenGasCompensation: globalContants.BIG_NUMBER_0,
+	_troveManagerContract: {},
+	_sortedTrovesContract: {},
+	_hintHelpersContract: {},
+	_stabilityPoolContract: {},
+
+	_tokenContract: {},
+	get tokenContract() {
+		return this._tokenContract;
+	},
 
 	init: function (chainId: number, signer: providers.JsonRpcSigner, account?: string) {
 		this._signer = signer;
 		this._currentChainId = chainId;
 		this._magmaCfg = (appConfig.magma as JsonObject)[String(chainId)];
+		this._tokensAsKey = Object.keys(this._magmaCfg.tokens);
 
 		if (account) this._account = account;
 
+		this._readyTokens();
 		this._readyContracts();
 	},
 
@@ -104,7 +138,7 @@ export const magma: {
 							} as Vaultish,
 								IOTX,
 								this._wenGasCompensation,
-								this._borrowingRate
+								this._borrowingRate["IOTX"]
 							));
 					});
 				}
@@ -117,9 +151,12 @@ export const magma: {
 	},
 
 	getVaultByOwner: async function (owner: string): Promise<Vault | undefined> {
-		const res: any = await this._troveManagerContract?.dappFunctions.Troves.call(owner);
-		if (res) {
-			return new Vault(
+		const obj: any = {};
+		for (let i = 0; i < this._tokensAsKey.length; i++) {
+			const key = this._tokensAsKey[i];
+
+			const res: any = await this._troveManagerContract[key]?.dappFunctions.Troves.call(owner);
+			obj[key] = new Vault(
 				{
 					id: owner,
 					debt: BigNumber(res.debt._hex),
@@ -128,12 +165,14 @@ export const magma: {
 					status: res.status as VaultStatus,
 					arrayIndex: BigNumber(res.arrayIndex._hex)
 				} as Vaultish,
-				IOTX,
+				this.tokens[key],
 				this._wenGasCompensation,
-				this._borrowingRate,
+				this._borrowingRate[key],
 				this._currentChainId
 			);
 		}
+
+		return obj;
 	},
 
 	computeFee: function (): number {
@@ -143,26 +182,47 @@ export const magma: {
 
 	openVault: async function (vault: Vault, maxFeePercentage: number, debtChange: BigNumber, deposit: BigNumber, onWait, onFail, onDone) {
 		const hints = await this.findHintsForNominalCollateralRatio(vault.nominalCollateralRatio(), vault.id);
-		this.borrowerOperationsContract?.dappFunctions.openTrove.run(
-			onWait,
-			onFail,
-			onDone,
-			{ value: deposit.toFixed() },
-			BigNumber(maxFeePercentage).shiftedBy(18).toFixed(),
-			debtChange.toFixed(),
-			hints[0],
-			hints[1]
-		);
+		const amount = deposit.toFixed();
+		if (vault.collateralToken.address && vault.collateralToken.address !== zeroAddress) {
+			this._tokenContract[vault.collateralToken.symbol].dappFunctions.approve.run(
+				undefined,
+				onFail,
+				() => {
+					this.borrowerOperationsContract?.dappFunctions["openTrove(address,uint256,uint256,uint256,address,address)"].run(
+						onWait,
+						onFail,
+						onDone,
+						undefined,
+						vault.collateralToken.address,
+						amount,
+						BigNumber(maxFeePercentage).shiftedBy(18).toFixed(),
+						debtChange.toFixed(),
+						hints[0],
+						hints[1]
+					);
+				},
+				undefined,
+				this.borrowerOperationsContract?.address,
+				amount
+			);
+		} else {
+			this.borrowerOperationsContract?.dappFunctions["openTrove(uint256,uint256,address,address)"].run(
+				onWait,
+				onFail,
+				onDone,
+				{ value: amount },
+				BigNumber(maxFeePercentage).shiftedBy(18).toFixed(),
+				debtChange.toFixed(),
+				hints[0],
+				hints[1]
+			);
+		}
 	},
 
 	_readyContracts: function (): void {
 		if (this._magmaCfg.multicaller) {
 			this._multicallContract = new DappContract(this._magmaCfg.multicaller, multicallAbi, this._signer);
 			multicaller.init(this._multicallContract);
-		}
-
-		if (this._magmaCfg.troveManager) {
-			this._troveManagerContract = new DappContract(this._magmaCfg.troveManager, troveManagerAbi, this._signer);
 		}
 
 		if (this._magmaCfg.priceFeed) {
@@ -173,66 +233,41 @@ export const magma: {
 			this._lusdTokenContract = new DappContract(this._magmaCfg.lusdToken, lusdTokenAbi, this._signer);
 		}
 
+		if (this._magmaCfg.sysConfig) {
+			this._sysConfigContract = new DappContract(this._magmaCfg.sysConfig, sysConfigAbi, this._signer);
+		}
+
 		if (this._magmaCfg.borrowerOperations) {
 			this.borrowerOperationsContract = new DappContract(this._magmaCfg.borrowerOperations, borrowerOperationsAbi, this._signer);
 		}
 
-		if (this._magmaCfg.sortedTroves) {
-			this._sortedTrovesContract = new DappContract(this._magmaCfg.sortedTroves, sortedTrovesAbi, this._signer);
-		}
+		Object.entries(this._magmaCfg.tokens).forEach((token: any) => {
+			const key = token[0];
+			const tokenCfg = token[1];
 
-		if (this._magmaCfg.hintHelpers) {
-			this._hintHelpersContract = new DappContract(this._magmaCfg.hintHelpers, hintHelpersAbi, this._signer);
-		}
+			if (tokenCfg.address !== zeroAddress) {
+				this._tokenContract[key] = new DappContract(tokenCfg.address, erc20ABI, this._signer);
+			}
 
-		if (this._magmaCfg.stabilityPool) {
-			this._stabilityPoolContract = new DappContract(this._magmaCfg.stabilityPool, stabilityPoolAbi, this._signer);
-		}
+			if (tokenCfg.troveManager) {
+				this._troveManagerContract[key] = new DappContract(tokenCfg.troveManager, troveManagerAbi, this._signer);
+			}
+
+			if (tokenCfg.sortedTroves) {
+				this._sortedTrovesContract[key] = new DappContract(tokenCfg.sortedTroves, sortedTrovesAbi, this._signer);
+			}
+
+			if (tokenCfg.hintHelpers) {
+				this._hintHelpersContract[key] = new DappContract(tokenCfg.hintHelpers, hintHelpersAbi, this._signer);
+			}
+
+			if (tokenCfg.stabilityPool) {
+				this._stabilityPoolContract[key] = new DappContract(tokenCfg.stabilityPool, stabilityPoolAbi, this._signer);
+			}
+		});
 	},
 
 	_getMagmaDataStep1: async function (): Promise<void> {
-		multicaller.addCall({
-			contractAddress: this._priceFeedContract?.address,
-			call: this._priceFeedContract?.dappFunctions.fetchPrice.encode(),
-			parseFunc: args => {
-				this.magmaData.price = BigNumber(args as string).shiftedBy(-18).toNumber();
-			}
-		} as callRequest);
-
-		multicaller.addCall({
-			contractAddress: this._troveManagerContract?.address,
-			call: this._troveManagerContract?.dappFunctions.getEntireSystemColl.encode(),
-			parseFunc: args => {
-				this.magmaData.entireSystemColl = BigNumber(args as string);
-				this.magmaData.TVL = this.magmaData.entireSystemColl;
-			}
-		} as callRequest);
-
-		multicaller.addCall({
-			contractAddress: this._troveManagerContract?.address,
-			call: this._troveManagerContract?.dappFunctions.getEntireSystemDebt.encode(),
-			parseFunc: args => {
-				this.magmaData.entireSystemDebt = BigNumber(args as string);
-			}
-		} as callRequest);
-
-		multicaller.addCall({
-			contractAddress: this._troveManagerContract?.address,
-			call: this._troveManagerContract?.dappFunctions.getTroveOwnersCount.encode(),
-			parseFunc: args => {
-				this.magmaData.vaultsCount = BigNumber(args as string).toNumber();
-			}
-		} as callRequest);
-
-		multicaller.addCall({
-			contractAddress: this._troveManagerContract?.address,
-			call: this._troveManagerContract?.dappFunctions.getBorrowingRateWithDecay.encode(),
-			parseFunc: args => {
-				this.magmaData.borrowingRateWithDecay = BigNumber(args as string).shiftedBy(-18).toNumber();
-				this._borrowingRate = this.magmaData.borrowingRateWithDecay;
-			}
-		} as callRequest);
-
 		multicaller.addCall({
 			contractAddress: this._lusdTokenContract?.address,
 			call: this._lusdTokenContract?.dappFunctions.balanceOf.encode(this._account),
@@ -282,85 +317,175 @@ export const magma: {
 			}
 		} as callRequest);
 
-		multicaller.addCall({
-			contractAddress: this._stabilityPoolContract?.address,
-			call: this._stabilityPoolContract?.dappFunctions.getDepositorETHGain.encode(this._account),
-			parseFunc: args => {
-				this.magmaData.stabilityDeposit = {
-					...this.magmaData.stabilityDeposit,
-					collateralGain: BigNumber(args as string)
-				} as StabilityDeposit;
-			}
-		} as callRequest);
+		Object.entries(this._magmaCfg.tokens).forEach(items => {
+			const key = items[0];
+			const tokenCfg: any = items[1];
+			const theTroveManagerContract = this._troveManagerContract[key];
+			const theStabilityPoolContract = this._stabilityPoolContract[key];
 
-		multicaller.addCall({
-			contractAddress: this._stabilityPoolContract?.address,
-			call: this._stabilityPoolContract?.dappFunctions.getCompoundedLUSDDeposit.encode(this._account),
-			parseFunc: args => {
-				this.magmaData.stabilityDeposit = {
-					...this.magmaData.stabilityDeposit,
-					currentLUSD: BigNumber(args as string)
-				} as StabilityDeposit;
-			}
-		} as callRequest);
+			if (tokenCfg.address === zeroAddress) {
+				multicaller.addCall({
+					contractAddress: this._priceFeedContract?.address,
+					call: this._priceFeedContract?.dappFunctions.fetchPrice.encode(),
+					parseFunc: args => {
+						this.magmaData.price[key] = BigNumber(args as string).shiftedBy(-18).toNumber();
+					}
+				} as callRequest);
 
-		multicaller.addCall({
-			contractAddress: this._stabilityPoolContract?.address,
-			call: this._stabilityPoolContract?.dappFunctions.getDepositorLQTYGain.encode(this._account),
-			parseFunc: args => {
-				this.magmaData.stabilityDeposit = {
-					...this.magmaData.stabilityDeposit,
-					lqtyReward: BigNumber(args as string)
-				} as StabilityDeposit;
-			}
-		} as callRequest);
+				multicaller.addCall({
+					contractAddress: theTroveManagerContract?.address,
+					call: theTroveManagerContract?.dappFunctions.getEntireSystemColl.encode(),
+					parseFunc: args => {
+						this.magmaData.entireSystemColl[key] = BigNumber(args as string);
+						this.magmaData.TVL[key] = this.magmaData.entireSystemColl[key];
+					}
+				} as callRequest);
 
-		multicaller.addCall({
-			contractAddress: this._stabilityPoolContract?.address,
-			call: this._stabilityPoolContract?.dappFunctions.deposits.encode(this._account),
-			parseFunc: args => {
-				const res: any = this._stabilityPoolContract?.interface.decodeFunctionResult("deposits", args);
-				this.magmaData.stabilityDeposit = {
-					...this.magmaData.stabilityDeposit,
-					initialValue: BigNumber(res[0] as string),
-					frontEndTag: res[1]
-				} as StabilityDeposit;
-			}
-		} as callRequest);
+				multicaller.addCall({
+					contractAddress: theTroveManagerContract?.address,
+					call: theTroveManagerContract?.dappFunctions.getEntireSystemDebt.encode(),
+					parseFunc: args => {
+						this.magmaData.entireSystemDebt[key] = BigNumber(args as string);
+					}
+				} as callRequest);
+			} else {
+				if (this._tokenContract[key]) {
+					multicaller.addCall({
+						contractAddress: this._tokenContract[key].address,
+						call: this._tokenContract[key]?.dappFunctions.balanceOf.encode(this._account),
+						parseFunc: args => {
+							this.magmaData.balance[key] = BigNumber(args as string);
+						}
+					} as callRequest);
+				}
 
-		multicaller.addCall({
-			contractAddress: this._stabilityPoolContract?.address,
-			call: this._stabilityPoolContract?.dappFunctions.getTotalLUSDDeposits.encode(),
-			parseFunc: args => {
-				const res: any = this._stabilityPoolContract?.interface.decodeFunctionResult("getTotalLUSDDeposits", args);
-				this.magmaData.lusdInStabilityPool = BigNumber(res[0]._hex);
+				multicaller.addCall({
+					contractAddress: this._sysConfigContract?.address,
+					call: this._sysConfigContract?.dappFunctions.fetchPrice.encode(tokenCfg.address),
+					parseFunc: args => {
+						this.magmaData.price[key] = BigNumber(args as string).shiftedBy(-18).toNumber();
+					}
+				} as callRequest);
+
+				multicaller.addCall({
+					contractAddress: this._sysConfigContract?.address,
+					call: this._sysConfigContract?.dappFunctions.getEntireSystemColl.encode(tokenCfg.address),
+					parseFunc: args => {
+						this.magmaData.entireSystemColl[key] = BigNumber(args as string);
+						this.magmaData.TVL[key] = this.magmaData.entireSystemColl[key];
+					}
+				} as callRequest);
+
+				multicaller.addCall({
+					contractAddress: this._sysConfigContract?.address,
+					call: this._sysConfigContract?.dappFunctions.getEntireSystemDebt.encode(tokenCfg.address),
+					parseFunc: args => {
+						this.magmaData.entireSystemDebt[key] = BigNumber(args as string);
+					}
+				} as callRequest);
 			}
-		} as callRequest);
+
+			multicaller.addCall({
+				contractAddress: theTroveManagerContract?.address,
+				call: theTroveManagerContract?.dappFunctions.getTroveOwnersCount.encode(),
+				parseFunc: args => {
+					this.magmaData.vaultsCount[key] = BigNumber(args as string).toNumber();
+				}
+			} as callRequest);
+
+			multicaller.addCall({
+				contractAddress: theTroveManagerContract?.address,
+				call: theTroveManagerContract?.dappFunctions.getBorrowingRateWithDecay.encode(),
+				parseFunc: args => {
+					this.magmaData.borrowingRateWithDecay[key] = BigNumber(args as string).shiftedBy(-18).toNumber();
+					this._borrowingRate[key] = this.magmaData.borrowingRateWithDecay;
+				}
+			} as callRequest);
+
+			multicaller.addCall({
+				contractAddress: theStabilityPoolContract?.address,
+				call: theStabilityPoolContract?.dappFunctions.getDepositorETHGain.encode(this._account),
+				parseFunc: args => {
+					this.magmaData.stabilityDeposit[key] = {
+						...this.magmaData.stabilityDeposit[key],
+						collateralGain: BigNumber(args as string)
+					} as StabilityDeposit;
+				}
+			} as callRequest);
+
+			multicaller.addCall({
+				contractAddress: theStabilityPoolContract?.address,
+				call: theStabilityPoolContract?.dappFunctions.getCompoundedLUSDDeposit.encode(this._account),
+				parseFunc: args => {
+					this.magmaData.stabilityDeposit[key] = {
+						...this.magmaData.stabilityDeposit[key],
+						currentLUSD: BigNumber(args as string)
+					} as StabilityDeposit;
+				}
+			} as callRequest);
+
+			multicaller.addCall({
+				contractAddress: theStabilityPoolContract?.address,
+				call: theStabilityPoolContract?.dappFunctions.getDepositorLQTYGain.encode(this._account),
+				parseFunc: args => {
+					this.magmaData.stabilityDeposit[key] = {
+						...this.magmaData.stabilityDeposit[key],
+						lqtyReward: BigNumber(args as string)
+					} as StabilityDeposit;
+				}
+			} as callRequest);
+
+			multicaller.addCall({
+				contractAddress: theStabilityPoolContract?.address,
+				call: theStabilityPoolContract?.dappFunctions.deposits.encode(this._account),
+				parseFunc: args => {
+					const res: any = theStabilityPoolContract?.interface.decodeFunctionResult("deposits", args);
+					this.magmaData.stabilityDeposit[key] = {
+						...this.magmaData.stabilityDeposit[key],
+						initialValue: BigNumber(res[0] as string),
+						frontEndTag: res[1]
+					} as StabilityDeposit;
+				}
+			} as callRequest);
+
+			multicaller.addCall({
+				contractAddress: theStabilityPoolContract?.address,
+				call: theStabilityPoolContract?.dappFunctions.getTotalLUSDDeposits.encode(),
+				parseFunc: args => {
+					const res: any = theStabilityPoolContract?.interface.decodeFunctionResult("getTotalLUSDDeposits", args);
+					this.magmaData.lusdInStabilityPool[key] = BigNumber(res[0]._hex);
+				}
+			} as callRequest);
+		});
 
 		await multicaller.batchingCall();
 	},
 
 	_getMagmaDataStep2: async function (): Promise<void> {
-		multicaller.addCall({
-			contractAddress: this._troveManagerContract?.address,
-			call: this._troveManagerContract?.dappFunctions.checkRecoveryMode.encode(BigNumber(this.magmaData.price).shiftedBy(18).toFixed(0)),
-			parseFunc: args => {
-				this.magmaData.recoveryMode = Boolean(BigNumber(args as string).toNumber());
-			}
-		} as callRequest);
+		this._tokensAsKey.forEach(key => {
+			const theTroveManagerContract = this._troveManagerContract[key];
+
+			multicaller.addCall({
+				contractAddress: theTroveManagerContract?.address,
+				call: theTroveManagerContract?.dappFunctions.checkRecoveryMode.encode(BigNumber(this.magmaData.price[key]).shiftedBy(18).toFixed(0)),
+				parseFunc: args => {
+					this.magmaData.recoveryMode[key] = Boolean(BigNumber(args as string).toNumber());
+				}
+			} as callRequest);
+		});
 
 		await multicaller.batchingCall();
 	},
 
-	findHintsForNominalCollateralRatio: async function (nominalCollateralRatio: number, ownAddress?: string): Promise<[string, string]> {
-		const numberOfTroves = this.magmaData.vaultsCount;
+	findHintsForNominalCollateralRatio: async function (nominalCollateralRatio: number, ownAddress?: string, market: Coin = IOTX): Promise<[string, string]> {
+		const numberOfTroves = this.magmaData.vaultsCount[market.symbol];
 
 		if (!numberOfTroves) {
 			return [globalContants.ADDRESS_0, globalContants.ADDRESS_0];
 		}
 
 		if (!Number.isFinite(nominalCollateralRatio)) {
-			const res = await this._sortedTrovesContract?.dappFunctions.getFirst.call();
+			const res = await this._sortedTrovesContract[market.symbol]?.dappFunctions.getFirst.call();
 			return [globalContants.ADDRESS_0, res as unknown as string];
 		}
 
@@ -372,7 +497,7 @@ export const magma: {
 			argObject: ApproxHintObject,
 			numberOfTrials: number
 		) => {
-			const res: any = await this._hintHelpersContract?.dappFunctions.getApproxHint.call(
+			const res: any = await this._hintHelpersContract[market.symbol]?.dappFunctions.getApproxHint.call(
 				nominalCollateralRatioNumber,
 				numberOfTrials,
 				argObject.latestRandomSeed.toFixed()
@@ -401,7 +526,7 @@ export const magma: {
 
 		const { hintAddress } = results.reduce((a, b) => (a.diff.lt(b.diff) ? a : b));
 
-		const positionResult: any = await this._sortedTrovesContract?.dappFunctions.findInsertPosition.call(
+		const positionResult: any = await this._sortedTrovesContract[market.symbol]?.dappFunctions.findInsertPosition.call(
 			nominalCollateralRatioNumber,
 			hintAddress,
 			hintAddress
@@ -414,9 +539,9 @@ export const magma: {
 			// because it is deleted from the list before the reinsertion.
 			// "Jump over" the Trove to get the proper hint.
 			if (prev === ownAddress) {
-				prev = await this._sortedTrovesContract?.dappFunctions.getPrev.call(prev);
+				prev = await this._sortedTrovesContract[market.symbol]?.dappFunctions.getPrev.call(prev);
 			} else if (next === ownAddress) {
-				next = await this._sortedTrovesContract?.dappFunctions.getNext.call(next);
+				next = await this._sortedTrovesContract[market.symbol]?.dappFunctions.getNext.call(next);
 			}
 		}
 
@@ -432,7 +557,7 @@ export const magma: {
 	},
 
 	wouldBeRecoveryMode: function (collateral: BigNumber, debt: BigNumber, collateralPrice: number, loanPrice = 1, collateralToken: Coin, loanToken = WEN): boolean {
-		if (!this.magmaData?.entireSystemColl || !this.magmaData?.entireSystemDebt || !this.magmaData?.CCR) throw new Error("magmaData.* is null");
+		if (!this.magmaData?.entireSystemColl[collateralToken.symbol] || !this.magmaData?.entireSystemDebt[collateralToken.symbol] || !this.magmaData?.CCR) throw new Error("magmaData.* is null");
 
 		if (debt.eq(0)) {
 			return false;
@@ -450,25 +575,63 @@ export const magma: {
 		this.borrowerOperationsContract?.dappFunctions.closeTrove.run(onWait, onFail, onDone, { from: this._account });
 	},
 
-	stake: function (amount, frontendTag, onWait, onFail, onDone): void {
-		this._stabilityPoolContract?.dappFunctions.provideToSP.run(
-			onWait,
-			onFail,
-			onDone,
-			{ from: this._account },
-			amount.toFixed(),
-			frontendTag
-		);
+	stake: function (token = IOTX, amount, frontendTag, onWait, onFail, onDone): void {
+		const amt = amount.toFixed();
+		if (!token.address || token.address === zeroAddress) {
+			this._stabilityPoolContract[token.symbol]?.dappFunctions.provideToSP.run(
+				onWait,
+				onFail,
+				onDone,
+				{ from: this._account },
+				amt,
+				frontendTag
+			);
+		} else {
+			this._lusdTokenContract?.dappFunctions.approve.run(
+				undefined,
+				onFail,
+				() => {
+					this._stabilityPoolContract[token.symbol]?.dappFunctions.provideToSP.run(
+						onWait,
+						onFail,
+						onDone,
+						{ from: this._account },
+						amt,
+						frontendTag
+					);
+				},
+				undefined,
+				this._stabilityPoolContract[token.symbol]?.address,
+				amt
+			);
+		}
 	},
 
-	unstake: function (amount, onWait, onFail, onDone): void {
-		this._stabilityPoolContract?.dappFunctions.provideToSP.run(
-			onWait,
-			onFail,
-			onDone,
-			{ from: this._account },
-			amount.toFixed()
-		);
+	unstake: function (token = IOTX, amount, onWait, onFail, onDone): void {
+		const amt = amount.toFixed();
+		const func = () => {
+			this._stabilityPoolContract[token.symbol]?.dappFunctions.withdrawFromSP.run(
+				onWait,
+				onFail,
+				onDone,
+				{ from: this._account },
+				amt
+			);
+		};
+		func();
+
+		// if (!token.address || token.address === zeroAddress) {
+		// 	func()
+		// } else {
+		// 	this._lusdTokenContract?.dappFunctions.approve.run(
+		// 		undefined,
+		// 		onFail,
+		// 		func,
+		// 		undefined,
+		// 		this._stabilityPoolContract[token.symbol]?.address,
+		// 		amt
+		// 	);
+		// }
 	},
 
 	swap: async function (wenAmount, collateralPrice, onWait, onFail, onDone) {
@@ -504,9 +667,9 @@ export const magma: {
 		if (!this.magmaData.entireSystemColl || !this.magmaData.entireSystemDebt || !this.magmaData.price) return 0;
 
 		return Vault.computeCollateralRatio(
-			this.magmaData.entireSystemColl,
-			this.magmaData.entireSystemDebt,
-			this.magmaData.price,
+			this.magmaData.entireSystemColl[collateralToken.symbol],
+			this.magmaData.entireSystemDebt[collateralToken.symbol],
+			this.magmaData.price[collateralToken.symbol],
 			1,
 			collateralToken,
 			WEN
@@ -521,5 +684,40 @@ export const magma: {
 			{ from: this._account },
 			this._account
 		);
+	},
+
+	calculateTVL: function (): number {
+		let sum = 0;
+
+		this._tokensAsKey.forEach(key => {
+			const amountDecimals = formatAssetAmount(this.magmaData.TVL[key], this._magmaCfg.tokens[key].decimals);
+			const price = this.magmaData.price[key];
+			sum += amountDecimals * price;
+		});
+
+		return sum;
+	},
+
+	calculateTotalWENStaked: function (): number {
+		let sum = 0;
+
+		this._tokensAsKey.forEach(key => {
+			const amountDecimals = formatAssetAmount(this.magmaData.lusdInStabilityPool[key], this._magmaCfg.tokens[key].decimals);
+			sum += amountDecimals;
+		});
+
+		return sum;
+	},
+
+	_readyTokens: function (): void {
+		this._tokensAsKey.forEach(key => {
+			const theToken = this._magmaCfg.tokens[key];
+			this.tokens[key] = {
+				symbol: theToken.symbol,
+				logo: theToken.logo,
+				decimals: theToken.decimals,
+				address: theToken.address
+			} as Coin;
+		});
 	}
 };

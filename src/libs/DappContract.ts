@@ -6,6 +6,7 @@ import { Signer } from "ethers";
 import { ContractInterface, ContractFunction, Contract } from "@ethersproject/contracts"
 import { MixedError } from "./types";
 import { Interface } from "@ethersproject/abi";
+import { defineReadOnly } from "@ethersproject/properties"
 
 type TransactionState = "idle" | "estimatingGas" | "waitingForConfirmation" | "failed" | "confirmed";
 
@@ -108,7 +109,11 @@ class TrackableFunction {
 			try {
 				this._tracker.state = "estimatingGas";
 
-				gasLimit = await this._estimateGasFunc(...args, overrides);
+				if (overrides) {
+					gasLimit = await this._estimateGasFunc(...args, overrides);
+				} else {
+					gasLimit = await this._estimateGasFunc(...args);
+				}
 			} catch (error) {
 				this._trackerGetError(error);
 			}
@@ -117,13 +122,21 @@ class TrackableFunction {
 		if (this._method) {
 			let res: TransactionResponse | undefined;
 			try {
-				if (gasLimit?.isZero()) {
-					res = await this._method(...args, overrides);
+				if (overrides) {
+					if (gasLimit?.isZero()) {
+						res = await this._method(...args, overrides);
+					} else {
+						res = await this._method(...args, {
+							...overrides,
+							gasLimit: gasLimit.toString()
+						});
+					}
 				} else {
-					res = await this._method(...args, {
-						...overrides,
-						gasLimit: gasLimit.toString()
-					});
+					if (gasLimit?.isZero()) {
+						res = await this._method(...args);
+					} else {
+						res = await this._method(...args, { gasLimit: gasLimit.toString() });
+					}
 				}
 			} catch (error) {
 				console.error(error);
@@ -169,7 +182,7 @@ export class DappContract extends Contract {
 			const fragment = this.interface.functions[signature];
 			const staticCall = fragment.stateMutability === "view";
 
-			this.dappFunctions[fragment.name] = new TrackableFunction(
+			const func = new TrackableFunction(
 				fragment.name,
 				this.estimateGas[signature],
 				staticCall ? this.callStatic[signature] : this.functions[signature],
@@ -177,6 +190,9 @@ export class DappContract extends Contract {
 				this.interface,
 				!staticCall ? this.callStatic[signature] : undefined
 			);
+
+			this.dappFunctions[fragment.name] = func;
+			this.dappFunctions[signature] = func;
 		});
 	}
 }

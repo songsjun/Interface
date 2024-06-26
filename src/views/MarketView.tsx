@@ -41,9 +41,10 @@ export const MarketView = ({
 	const {
 		price,
 		accountBalance,
-		lusdBalance
+		lusdBalance,
+		balance
 	} = magmaData;
-	if (!magmaData) return <></>;
+	const bal = (market.symbol === IOTX.symbol) ? accountBalance : balance;
 
 	const vault: Vault = magmaData.vault;
 	const total = {
@@ -79,7 +80,7 @@ export const MarketView = ({
 	const recoveryModeAt = CCR > 0 ? 1 / CCR : 0;
 	const liquidationPoint = recoveryMode ? CCR : MCR;
 	const appLiquidationPoint = recoveryMode ? CCR : appConfigConstants.appMCR;
-	const troveCollatera = formatAssetAmount(vault.collateral, IOTX.decimals);
+	const troveCollatera = formatAssetAmount(vault.collateral, market.decimals);
 	const troveCollateralValue = vault.collateral.shiftedBy(-market.decimals).multipliedBy(price);
 	const troveDebtValue = vault.debt.shiftedBy(-WEN.decimals);
 	const vaultDebtValuneNumber = troveDebtValue.toNumber();
@@ -118,7 +119,7 @@ export const MarketView = ({
 	};
 
 	const availableWithdrawal = vault.getAvailableWithdrawal(price, appLiquidationPoint);
-	const availableWithdrawalDecimals = formatAssetAmount(availableWithdrawal, IOTX.decimals);
+	const availableWithdrawalDecimals = formatAssetAmount(availableWithdrawal, market.decimals);
 	const availableWithdrawalFiat = availableWithdrawalDecimals * price;
 	const [txs, setTxs] = useState<TroveChangeTx[]>([]);
 	const [changes, setChanges] = useState<TroveChangeData[]>([]);
@@ -295,9 +296,22 @@ export const MarketView = ({
 	};
 
 	return <>
+		<div className="flex-row-align-left">
+			<img
+				src={market.logo}
+				height="40px" />
+
+			<div className="flex-column-align-left">
+				<h2>{market.symbol}&nbsp;{t("vault")}</h2>
+
+				<div className="description">{t("depositAndGet", { symbol: market.symbol })}</div>
+			</div>
+		</div>
+
 		<div
 			id="marketView"
 			className="marketView marketViewLayout">
+
 			<div style={{ width: "100%" }}>
 				{vault.status !== VaultStatus4Contract.active && vault.status !== VaultStatus4Subgraph.open && <div className="card">
 					<img className="illustration" src="images/1wen=1usd.png" />
@@ -316,7 +330,7 @@ export const MarketView = ({
 						className="primaryButton bigButton"
 						style={{ width: "100%" }}
 						onClick={handleDeposit}
-						disabled={accountBalance.eq(0)}>
+						disabled={bal.eq(0)}>
 						<img src="images/deposit.png" />
 
 						{t("deposit") + " " + market?.symbol}
@@ -327,7 +341,7 @@ export const MarketView = ({
 						style={{
 							width: "100%",
 							textAlign: "center"
-						}}>{t("walletBalance")}&nbsp;{formatAsset(formatAssetAmount(accountBalance), IOTX)}</div>
+						}}>{t("walletBalance")}&nbsp;{formatAsset(formatAssetAmount(bal), market)}</div>
 				</div>}
 
 				{(vault.status === VaultStatus4Contract.active || vault.status === VaultStatus4Subgraph.open) && <div
@@ -420,13 +434,13 @@ export const MarketView = ({
 
 							<div className="flex-row-align-left">
 								<img
-									src="images/iotx.png"
+									src={market.logo}
 									width="40px" />
 
 								<div className="flex-column-align-left">
 									<div>{formatCurrency(troveCollateralValue.toNumber())}</div>
 
-									<div className="label labelSmall">{formatAsset(troveCollatera, IOTX)}</div>
+									<div className="label labelSmall">{formatAsset(troveCollatera, market)}</div>
 								</div>
 							</div>
 						</div>
@@ -441,7 +455,7 @@ export const MarketView = ({
 								onClick={handleDeposit}>
 								<img src="images/deposit-light.png" />
 
-								{t("deposit") + " " + IOTX.symbol}
+								{t("deposit") + " " + market.symbol}
 							</button>
 
 							<div
@@ -449,7 +463,7 @@ export const MarketView = ({
 								style={{
 									textAlign: "center",
 									width: "100%"
-								}}>{t("balance")}&nbsp;{formatAsset(formatAssetAmount(accountBalance, IOTX.decimals), IOTX)}</div>
+								}}>{t("balance")}&nbsp;{formatAsset(formatAssetAmount(bal, market.decimals), market)}</div>
 						</div>
 					</div>
 
@@ -548,13 +562,13 @@ export const MarketView = ({
 
 							<div className="flex-row-align-left">
 								<img
-									src="images/iotx.png"
+									src={market.logo}
 									width="40px" />
 
 								<div className="flex-column-align-left">
 									<div>{formatCurrency(availableWithdrawalFiat)}</div>
 
-									<div className="label labelSmall">{formatAsset(availableWithdrawalDecimals, IOTX)}</div>
+									<div className="label labelSmall">{formatAsset(availableWithdrawalDecimals, market)}</div>
 								</div>
 							</div>
 						</div>
@@ -568,7 +582,7 @@ export const MarketView = ({
 								disabled={availableWithdrawal.lt(0.01)}>
 								<img src="images/withdraw.png" />
 
-								{t("withdraw") + " " + IOTX.symbol}
+								{t("withdraw") + " " + market.symbol}
 							</button>
 						</div>
 					</div>
@@ -603,7 +617,7 @@ export const MarketView = ({
 
 						<div className="flex-column-align-right">
 							<div>{formatCurrency(formatedTVL * price)}</div>
-							<div className="comments">{formatAsset(formatedTVL)}</div>
+							<div className="comments">{formatAsset(formatedTVL, market)}</div>
 						</div>
 					</div>
 
@@ -727,7 +741,7 @@ export const MarketView = ({
 			isOpen={showDepositModal}
 			onClose={handleCloseDepositModal}
 			market={market}
-			accountBalance={accountBalance}
+			accountBalance={bal}
 			price={price}
 			vault={vault}
 			fees={fees}
@@ -751,7 +765,7 @@ export const MarketView = ({
 				<TxLabel
 					txHash={txHash}
 					title={t("deposited")}
-					logo="images/iotx.png"
+					logo={market.logo}
 					amount={formatAsset(formatAssetAmount(vault.collateral, market.decimals), market)} />
 
 				{depositAndBorrow && <button
@@ -854,7 +868,7 @@ export const MarketView = ({
 			<TxLabel
 				txHash={txHash}
 				title={t("withdrawn")}
-				logo="images/iotx.png"
+				logo={market.logo}
 				amount={withdrawnAmount.toFixed(2) + " " + market.symbol} />
 		</TxDone>}
 
@@ -863,7 +877,7 @@ export const MarketView = ({
 			onClose={handleCloseClosureModal}
 			vault={vault}
 			chainId={chainId}
-			balance={accountBalance}
+			balance={bal}
 			price={price}
 			wenBalance={lusdBalance}
 			market={market} />}

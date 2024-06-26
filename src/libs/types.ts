@@ -13,6 +13,7 @@ export type Coin = {
 	symbol: string;
 	logo: string;
 	decimals: number;
+	address?: string;
 };
 
 export type ValidationContext = {

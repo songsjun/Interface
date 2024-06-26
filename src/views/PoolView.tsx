@@ -139,6 +139,18 @@ export const PoolView = ({ market, magmaData, refreshTrigger }: {
 	};
 
 	return <>
+		<div className="flex-row-align-left">
+			<img
+				src={market.logo}
+				height="40px" />
+
+			<div className="flex-column-align-left">
+				<h2>{market.symbol}&nbsp;{t("stabilityPool")}</h2>
+
+				<div className="description">{t("depositAndGet", { symbol: market.symbol })}</div>
+			</div>
+		</div>
+
 		<div className="marketView poolView">
 			<div
 				className="flex-column"
@@ -180,7 +192,7 @@ export const PoolView = ({ market, magmaData, refreshTrigger }: {
 							<div>
 								<span className="label">{t("shareOfPool")}&nbsp;&nbsp;</span>
 
-								<span>{formatPercent(stabilityDeposit.currentLUSD.dividedBy(lusdInStabilityPool).toNumber())}</span>
+								<span>{formatPercent(lusdInStabilityPool.eq(0) ? 0 : stabilityDeposit.currentLUSD.dividedBy(lusdInStabilityPool).toNumber())}</span>
 							</div>
 						</div>
 
@@ -246,13 +258,13 @@ export const PoolView = ({ market, magmaData, refreshTrigger }: {
 							style={{ alignItems: "center" }}>
 							<div className="flex-row-align-left">
 								<img
-									src={IOTX.logo}
+									src={market.logo}
 									width="40px" />
 
 								<div className="flex-column-align-left">
 									<div>{formatCurrency(rewardsFromCollateral * price)}</div>
 
-									<div className="label labelSmall">{rewardsFromCollateral.toString(2)}&nbsp;{IOTX.symbol}</div>
+									<div className="label labelSmall">{rewardsFromCollateral.toString(2)}&nbsp;{market.symbol}</div>
 								</div>
 							</div>
 						</div>
@@ -317,7 +329,8 @@ export const PoolView = ({ market, magmaData, refreshTrigger }: {
 			wenBalance={lusdBalance}
 			onDone={handleModalDone}
 			stabilityDeposit={stabilityDeposit}
-			lusdInStabilityPool={lusdInStabilityPool} />}
+			lusdInStabilityPool={lusdInStabilityPool}
+			token={market} />}
 
 		{showTxResult?.action === ModalAction.Stake && showTxResult.isShow && <TxDone
 			title={t("stakedSuccessfully")}
@@ -347,7 +360,7 @@ export const PoolView = ({ market, magmaData, refreshTrigger }: {
 				txHash={txHash}
 				title={t("youReceived")}
 				logo={WEN.logo}
-				amount={amountInTx + " " + IOTX.symbol} />
+				amount={amountInTx + " " + market.symbol} />
 		</TxDone>}
 
 		{showModal?.action === ModalAction.Unstake && showModal.isShow && <UnstakeModal
@@ -356,7 +369,8 @@ export const PoolView = ({ market, magmaData, refreshTrigger }: {
 			wenBalance={lusdBalance}
 			onDone={handleModalDone}
 			stabilityDeposit={stabilityDeposit}
-			lusdInStabilityPool={lusdInStabilityPool} />}
+			lusdInStabilityPool={lusdInStabilityPool}
+			token={market} />}
 
 		{showTxResult?.action === ModalAction.Unstake && showTxResult.isShow && <TxDone
 			title={t("unstakedSuccessfully")}

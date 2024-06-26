@@ -4,7 +4,7 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { Modal } from "../components/Modal";
 import { useLang } from "../hooks/useLang";
-import { ErrorMessage, StabilityDeposit } from "../libs/types";
+import { Coin, ErrorMessage, StabilityDeposit } from "../libs/types";
 import { WEN, globalContants } from "../libs/globalContants";
 import { AmountInput } from "../components/AmountInput";
 import { useState } from "react";
@@ -23,7 +23,8 @@ export const StakeModal = ({
 	wenBalance = globalContants.BIG_NUMBER_0,
 	onDone = () => { },
 	stabilityDeposit,
-	lusdInStabilityPool
+	lusdInStabilityPool,
+	token
 }: {
 	isOpen: boolean;
 	onClose: () => void;
@@ -31,6 +32,7 @@ export const StakeModal = ({
 	onDone: (tx: string, depositInput: number) => void;
 	stabilityDeposit: StabilityDeposit;
 	lusdInStabilityPool: BigNumber;
+	token: Coin;
 }) => {
 	const { frontendTag } = useLiquity();
 	const { t } = useLang();
@@ -70,6 +72,7 @@ export const StakeModal = ({
 		setSending(true);
 
 		magma.stake(
+			token,
 			depositAmount,
 			frontendTag,
 			undefined,

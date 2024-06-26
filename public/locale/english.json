@@ -166,5 +166,17 @@
 	"telegram": "Telegram",
 	"stabilityPoolPoints": "Stability Pool",
 	"lpPoints": "LP Points",
-	"referralsPoints": "Referrals"
+	"referralsPoints": "Referrals",
+	"protocolStats": "Protocol Stats",
+	"totalDeposited": "Total Deposited",
+	"totalStaked": "Total Staked",
+	"totalBorrowed": "Total Borrowed",
+	"yourStats": "Your Stats",
+	"totalDebt": "Total Debt",
+	"dashboard": "dashboard",
+	"withdrawable": "Withdrawable",
+	"borrowable": "Borrowable",
+	"manage": "Manage",
+	"back": "back",
+	"vault": "vault"
 }

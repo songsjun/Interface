@@ -4,7 +4,7 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { Modal } from "../components/Modal";
 import { useLang } from "../hooks/useLang";
-import { ErrorMessage, StabilityDeposit } from "../libs/types";
+import { Coin, ErrorMessage, StabilityDeposit } from "../libs/types";
 import { WEN, globalContants } from "../libs/globalContants";
 import { AmountInput } from "../components/AmountInput";
 import React, { useState } from "react";
@@ -13,6 +13,7 @@ import { TxLabel } from "../components/TxLabel";
 import { formatAsset, formatAssetAmount } from "../utils";
 import BigNumber from "bignumber.js";
 import { magma } from "../libs/magma";
+import { useLiquity } from "../hooks/LiquityContext";
 
 let amountUnstaked = 0;
 
@@ -22,7 +23,8 @@ export const UnstakeModal = ({
 	wenBalance = globalContants.BIG_NUMBER_0,
 	onDone = () => { },
 	stabilityDeposit,
-	lusdInStabilityPool
+	lusdInStabilityPool,
+	token
 }: {
 	isOpen: boolean;
 	onClose: () => void;
@@ -30,6 +32,7 @@ export const UnstakeModal = ({
 	onDone: (tx: string, unstakeInput: number) => void;
 	stabilityDeposit: StabilityDeposit;
 	lusdInStabilityPool: BigNumber;
+	token: Coin;
 }) => {
 	const { t } = useLang();
 	const [valueForced, setValueForced] = useState(-1);
@@ -65,6 +68,7 @@ export const UnstakeModal = ({
 		setSending(true);
 
 		magma.unstake(
+			token,
 			unstakeAmount,
 			undefined,
 			error => setErrorMessages({ string: error.message } as ErrorMessage),

@@ -58,11 +58,14 @@
   src: url("/fonts/Metropolis-Bold.ttf");
 }
 
+html {
+  font-size: 16px;
+}
+
 body {
   font-family: metropolis400;
   background-color: var(--background-color);
   color: var(--color);
-  font-size: 16px;
   background-image: url("/images/bg.png");
   background-position: center center;
   background-attachment: fixed;
@@ -112,6 +115,18 @@ h4 {
   text-transform: capitalize;
   margin: 0;
   padding: 0;
+}
+
+h5 {
+  font-family: metropolis700;
+  font-size: 1rem;
+  text-transform: capitalize;
+  margin: 0;
+  padding: 0;
+}
+
+.small {
+  font-size: smaller;
 }
 
 #root {
@@ -554,6 +569,110 @@ h4 {
 
     .viewIcon {
       width: 28px;
+    }
+  }
+}
+
+.vaultList {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--flex-gap-big);
+}
+
+.tokenCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--flex-gap-big) !important;
+
+  .titleBar {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 2rem;
+
+    .tokenTitle {
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      align-items: center;
+      gap: 0.5rem;
+      white-space: nowrap;
+    }
+
+    .scoreInTitlebar {
+      white-space: nowrap;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 0.1rem;
+
+      .value {
+        color: #8ED434;
+      }
+    }
+  }
+
+  .valuesGrid {
+    display: grid;
+    grid-template-columns: repeat(2, calc((100% - var(--flex-gap-big)) / 2));
+    gap: var(--flex-gap-big);
+    width: 100%;
+  }
+}
+
+.dashboardLayout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--flex-gap-larger);
+
+  .dashboardItem {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    
+    .card{
+      width: calc(100% - 3rem) !important;
+    }
+  }
+
+  .statsBar {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    gap: var(--flex-gap-larger);
+    width: 100%;
+
+    .card {
+      flex: 1 1;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+
+      .titleBar {
+        display: flex;
+        flex-direction: row;
+        gap: 0.5rem;
+        justify-content: flex-start;
+        align-items: center;
+      }
+
+      .scores {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+
+        div {
+          display: flex;
+          flex-direction: column;
+        }
+      }
     }
   }
 }
