@@ -19,7 +19,8 @@ export const UserAccount = ({
   chainId = 0,
   chains = [],
   points,
-  pointObject
+  pointObject,
+  onSwitchNetwork = () => { }
 }: {
   onConnect: () => void;
   isSupportedNetwork: boolean;
@@ -27,6 +28,7 @@ export const UserAccount = ({
   chains: Chain[];
   points: number;
   pointObject?: Record<string, any>;
+  onSwitchNetwork?: () => void;
 }) => {
   const { publicClient, account } = useLiquity();
   const { t } = useLang();
@@ -65,8 +67,9 @@ export const UserAccount = ({
     disconnect();
   };
 
-  const handleSwitchNetwork = (idx: number) => {
-    switchNetwork && switchNetwork((chains[idx] as Chain).id);
+  const handleSwitchNetwork = async (idx: number) => {
+    switchNetwork && await switchNetwork({ chainId: (chains[idx] as Chain).id });
+    window.location.reload();
   };
 
   const entryView = isConnected ? <div className="flex-row-align-left">
