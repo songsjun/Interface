@@ -93,7 +93,9 @@ export const Dashboard = ({ magmaData }: {
 
 		<div className="vaultList">
 			{tokens.map(token => {
-				return <div className="dashboardItem">
+				return <div
+					className="dashboardItem"
+					key={token.symbol}>
 					<div className="flex-row-align-left">
 						<img
 							src={token.logo}
@@ -103,7 +105,6 @@ export const Dashboard = ({ magmaData }: {
 					</div>
 
 					<TokenCard
-						key={token.symbol}
 						token={token}
 						magmaData={magmaData}
 						onOpenVault={handleOpenVault}
@@ -111,7 +112,6 @@ export const Dashboard = ({ magmaData }: {
 						showIcon={false} />
 
 					<TokenStakedCard
-						key={token.symbol}
 						token={token}
 						magmaData={magmaData}
 						onOpenPool={handleOpenPool}
