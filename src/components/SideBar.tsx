@@ -67,46 +67,6 @@ export const SideBar: React.FC = ({ children }) => {
         active={pathname === "/liquidations"}
         target="_self" />
 
-      <NavLink
-        label={" " + t("referral")}
-        icon="images/referral.png"
-        url={"/referral" + urlSearch}
-        fullWidth={true}
-        showExternalLink={false}
-        active={pathname === "/referral"}
-        target="_self" />
-
-      <a
-        className="navLink"
-        href="https://docs.magma.finance/"
-        target="_blank">
-        <div className="icon">
-          <img src="images/docs.png" />
-        </div>
-
-
-        {t("docs")}
-
-        <img
-          id="externalLink"
-          src="images/external-link.png" />
-      </a>
-
-      <a
-        className="navLink"
-        href="https://twitter.com/MagmaProtocol"
-        target="_blank">
-        <div className="icon">
-          <img src="images/x.png" />
-        </div>
-
-        {t("twitter")}
-
-        <img
-          id="externalLink"
-          src="images/external-link.png" />
-      </a>
-
       <div
         className="navLink mainMenuForMobile"
         onClick={handleShowMenuForMobile}>
@@ -116,7 +76,45 @@ export const SideBar: React.FC = ({ children }) => {
       </div>
 
       {showMobileMenu && <div className="mainMenu">
+        <NavLink
+          label={" " + t("referral")}
+          icon="images/referral.png"
+          url={"/referral" + urlSearch}
+          fullWidth={true}
+          showExternalLink={false}
+          active={pathname === "/referral"}
+          target="_self" />
 
+        <a
+          className="navLink"
+          href="https://docs.magma.finance/"
+          target="_blank">
+          <div className="icon">
+            <img src="images/docs.png" />
+          </div>
+
+
+          {t("docs")}
+
+          <img
+            id="externalLink"
+            src="images/external-link.png" />
+        </a>
+
+        <a
+          className="navLink"
+          href="https://twitter.com/MagmaProtocol"
+          target="_blank">
+          <div className="icon">
+            <img src="images/x.png" />
+          </div>
+
+          {t("twitter")}
+
+          <img
+            id="externalLink"
+            src="images/external-link.png" />
+        </a>
 
         <a
           className="navLink"
@@ -150,16 +148,16 @@ export const SideBar: React.FC = ({ children }) => {
 
         <hr className="division" />
 
-        {/* <div style={{
+        <div style={{
           marginLeft: "16px",
           display: "flex",
           gap: "8px",
           flexDirection: "column"
         }}>
-          <StyleModeSelect />
+          {/* <StyleModeSelect /> */}
 
-          <LangSelect />
-        </div> */}
+          {/* <LangSelect /> */}
+        </div>
       </div>}
     </div>
   );
