@@ -61,6 +61,9 @@ export const magma: {
 	getTotalCollateralRatio: (collateralToken?: Coin) => number;
 	liquidate: (onWait?: (tx: string) => void, onFail?: (error: Error | any) => void, onDone?: (tx: string) => void) => void;
 	calculateTVL: () => number;
+	calculateTVLOfAllVault: (vaults: any, prices: any) => number;
+	calculateTotalLoanOfAllVault: (vaults: any) => number;
+	calculateTotalStakedOfAllVault: () => number;
 	calculateTotalWENStaked: () => number;
 	_readyTokens: () => void;
 	_readyContracts: () => void;
@@ -719,5 +722,34 @@ export const magma: {
 				address: theToken.address
 			} as Coin;
 		});
+	},
+
+	calculateTVLOfAllVault: function (vaults: any, prices: any): number {
+		let sum = 0;
+		Object.entries(vaults).forEach(items => {
+			const key: string = items[0];
+			const vault = items[1] as Vault;
+			sum += vault.collateralDecimals * prices[key];
+		});
+		return sum;
+	},
+
+	calculateTotalLoanOfAllVault: function (vaults: any): number {
+		let sum = 0;
+		Object.values(vaults).forEach(vault => {
+			sum += (vault as Vault).debtDecimals;
+		});
+		return sum;
+	},
+
+	calculateTotalStakedOfAllVault: function (): number {
+		let sum = 0;
+
+		this._tokensAsKey.forEach(key => {
+			const amountDecimals = formatAssetAmount(this.magmaData.stabilityDeposit[key].currentLUSD, this._magmaCfg.tokens[key].decimals);
+			sum += amountDecimals;
+		});
+
+		return sum;
 	}
 };

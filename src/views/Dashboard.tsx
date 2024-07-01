@@ -7,18 +7,21 @@ import { magma } from "../libs/magma";
 import { formatAssetAmount, formatCurrency } from "../utils";
 import { TokenCard } from "./TokenCard";
 import { TokenStakedCard } from "./TokenStakedCard";
+import { Vault } from "../libs/Vault";
 
 export const Dashboard = ({ magmaData }: {
 	magmaData?: Record<string, any>;
 }) => {
 	const { t } = useLang();
 	const TVL = magmaData ? magma.calculateTVL() : 0;
-	// const formatedTVL = formatAssetAmount(TVL);
-	// const price = magmaData?.price;
 	const wenTotalSupply = magmaData?.wenTotalSupply || globalContants.BIG_NUMBER_0;
 	const lusdInStabilityPool = magmaData ? magma.calculateTotalWENStaked() : 0;
 	const { account } = useLiquity();
 	const tokens = Object.values(magma.tokens) || [];
+
+	const tvlOfAllVaults = magmaData ? magma.calculateTVLOfAllVault(magmaData.vaults, magmaData.price) : 0;
+	const totalStakedOfAllVaults = magmaData ? magma.calculateTotalStakedOfAllVault() : 0;
+	const totalLoanOfAllVaults = magmaData ? magma.calculateTotalLoanOfAllVault(magmaData.vaults) : 0;
 
 	const handleOpenVault = (token: string) => {
 		window.location.href = "/borrow?token=" + token;
@@ -71,19 +74,19 @@ export const Dashboard = ({ magmaData }: {
 
 				<div className="scores">
 					<div>
-						<h5>{formatCurrency(TVL)}</h5>
+						<h5>{formatCurrency(tvlOfAllVaults)}</h5>
 
 						<div className="description">{t("totalDeposited")}</div>
 					</div>
 
 					<div>
-						<h5>{formatCurrency(lusdInStabilityPool)}</h5>
+						<h5>{formatCurrency(totalStakedOfAllVaults)}</h5>
 
 						<div className="description">{t("totalStaked")}</div>
 					</div>
 
 					<div>
-						<h5>{formatCurrency(formatAssetAmount(wenTotalSupply, WEN.decimals))}</h5>
+						<h5>{formatCurrency(totalLoanOfAllVaults)}</h5>
 
 						<div className="description">{t("totalBorrowed")}</div>
 					</div>

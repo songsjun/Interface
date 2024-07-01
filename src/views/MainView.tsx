@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from "react";
 import { ConnectWalletModal } from "./ConnectWalletModal";
 import { SideBar } from "../components/SideBar";
@@ -23,10 +24,7 @@ import { magma } from "../libs/magma";
 import { JsonRpcSigner } from "@ethersproject/providers";
 import { Vault } from "../libs/Vault";
 import BigNumber from "bignumber.js";
-import { Titlebar } from "./Titlebar";
 import { Dashboard } from "./Dashboard";
-
-// const select = ({ vault }: LiquityStoreState) => ({ vault });
 
 export const MainView = ({ chains }: { chains: Chain[] }) => {
 	const { isConnected } = useAccount();
@@ -41,12 +39,12 @@ export const MainView = ({ chains }: { chains: Chain[] }) => {
 	const [points, setPoints] = useState(0);
 	const { data } = useBalance({ address: account as Address, chainId });
 	const accountBalance = BigNumber(data?.value.toString() || 0) || globalContants.BIG_NUMBER_0;
-	const [vault, setVault] = useState<Vault>();
+	const [vaults, setVaults] = useState<any>({});
 	const [pointObject, setPointObject] = useState<Record<string, number>>();
 	const [isReferrer, setIsReferrer] = useState(false);
 	const [referralCode, setReferralCode] = useState("");
 	const [depositsByReferrer, setDepositsByReferrer] = useState<DepositByReferrer[]>()
-	const haveDeposited = vault?.collateral?.gt(0);
+	const haveDeposited: boolean = Object.values(vaults).findIndex(vault => (vault as unknown as Vault).collateral.gt(0)) >= 0;
 	const [refresh, setRefresh] = useState(false);
 
 	useEffect(() => {
@@ -134,7 +132,8 @@ export const MainView = ({ chains }: { chains: Chain[] }) => {
 				const res = await magma.getMagmaData();
 
 				const v = await magma.getVaultByOwner(account);
-				if (v) setVault(v);
+				if (v) setVaults(v);
+
 				if (res) setMagmaData({
 					...res,
 					accountBalance,

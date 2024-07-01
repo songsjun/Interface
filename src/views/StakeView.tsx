@@ -76,7 +76,8 @@ export const StakeView = ({ refreshTrigger, magmaData }: {
 						token={token}
 						magmaData={magmaData}
 						onOpenPool={handleOpenPool}
-						title={t("stabilityPool")} />
+						title={t("stabilityPool")} 
+						showIcon={true} />
 				})}
 			</div>
 		</>}
