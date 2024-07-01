@@ -130,6 +130,7 @@ export const CloseModal = ({
 		setSending(true);
 
 		magma.closeVault(
+			market,
 			undefined,
 			error => {
 				setErrorMessages({ string: error.message } as ErrorMessage);

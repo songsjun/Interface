@@ -53,7 +53,7 @@ export const magma: {
 	wouldBeRecoveryMode: (collateral: BigNumber, debt: BigNumber, collateralPrice: number, loanPrice: number, collateralToken: Coin, loanToken: Coin) => boolean;
 	computeFee: () => number;
 	openVault: (vault: Vault, maxFeePercentage: number, debtChange: BigNumber, deposit: BigNumber, onWait?: (tx: string) => void, onFail?: (error: Error | any) => void, onDone?: (tx: string) => void) => void;
-	closeVault: (onWait?: (tx: string) => void, onFail?: (error: Error | any) => void, onDone?: (tx: string) => void) => void;
+	closeVault: (token: Coin, onWait?: (tx: string) => void, onFail?: (error: Error | any) => void, onDone?: (tx: string) => void) => void;
 	stake: (token: Coin, amount: BigNumber, frontendTag: string, onWait?: (tx: string) => void, onFail?: (error: Error | any) => void, onDone?: (tx: string) => void) => void;
 	unstake: (token: Coin, amount: BigNumber, onWait?: (tx: string) => void, onFail?: (error: Error | any) => void, onDone?: (tx: string) => void) => void;
 	swap: (wenAmount: BigNumber, collateralPrice: number, onWait?: (tx: string) => void, onFail?: (error: Error | any) => void, onDone?: (tx: string) => void) => Promise<void>;
@@ -574,8 +574,12 @@ export const magma: {
 		}
 	},
 
-	closeVault: function (onWait, onFail, onDone): void {
-		this.borrowerOperationsContract?.dappFunctions.closeTrove.run(onWait, onFail, onDone, { from: this._account });
+	closeVault: function (token = IOTX, onWait, onFail, onDone): void {
+		if (token.symbol === IOTX.symbol) {
+			this.borrowerOperationsContract?.dappFunctions["closeTrove()"].run(onWait, onFail, onDone, { from: this._account });
+		} else {
+			this.borrowerOperationsContract?.dappFunctions["closeTrove(address)"].run(onWait, onFail, onDone, { from: this._account }, token.address);
+		}
 	},
 
 	stake: function (token = IOTX, amount, frontendTag, onWait, onFail, onDone): void {
