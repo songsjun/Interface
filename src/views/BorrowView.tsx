@@ -1,14 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { useEffect, useState } from "react";
-import { Tab } from "../components/Tab";
 import { useLang } from "../hooks/useLang";
-import { IOTX, Troves, WEN, globalContants } from "../libs/globalContants";
+import { WEN, globalContants } from "../libs/globalContants";
 import { Coin } from "../libs/types";
 import { MarketView } from "./MarketView";
 import { magma } from "../libs/magma";
 import { TokenCard } from "./TokenCard";
-import { useParams, useSearchParams } from "react-router-dom";
 
 export const BorrowView = ({ externalDataDone, magmaData, refreshTrigger }: {
 	isReferrer: boolean;
@@ -20,8 +18,6 @@ export const BorrowView = ({ externalDataDone, magmaData, refreshTrigger }: {
 	const tokens = Object.values(magma.tokens) || [];
 	const [magmaDataForSingleToken, setMagmaDataForSingleToken] = useState<Record<string, any>>();
 	const [currentMarket, setCurrentMarket] = useState<Coin>();
-	const [searchParams] = useSearchParams();
-	const tokenArg = searchParams.get("token")
 
 	const readyForOpenningMarket = (token: string) => {
 		setCurrentMarket(magma.tokens[token]);
@@ -44,14 +40,14 @@ export const BorrowView = ({ externalDataDone, magmaData, refreshTrigger }: {
 
 	useEffect(() => {
 		if (currentMarket && magmaDataForSingleToken && magmaData) {
-			readyForOpenningMarket(currentMarket.symbol);
+			return readyForOpenningMarket(currentMarket.symbol);
 		}
 
-		setTimeout(() => {
-			if (magmaData && tokenArg && tokens?.length > 0 && tokens.findIndex(item => item.symbol === tokenArg) >= 0) {
-				readyForOpenningMarket(tokenArg);
-			}
-		}, 1000);
+		const targetToken = window.localStorage.getItem(globalContants.TARGET_TOKEN);
+		if (magmaData && targetToken && tokens?.length > 0 && tokens.findIndex(item => item.symbol === targetToken) >= 0) {
+			readyForOpenningMarket(targetToken);
+			window.localStorage.removeItem(globalContants.TARGET_TOKEN);
+		}
 	}, [magmaData])
 
 	const handleOpenVault = (token: string) => {

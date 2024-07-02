@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { redirect } from "react-router-dom";
 import { useLiquity } from "../hooks/LiquityContext";
 import { useLang } from "../hooks/useLang";
 import { WEN, globalContants } from "../libs/globalContants";
@@ -7,7 +6,6 @@ import { magma } from "../libs/magma";
 import { formatAssetAmount, formatCurrency } from "../utils";
 import { TokenCard } from "./TokenCard";
 import { TokenStakedCard } from "./TokenStakedCard";
-import { Vault } from "../libs/Vault";
 
 export const Dashboard = ({ magmaData }: {
 	magmaData?: Record<string, any>;
@@ -24,11 +22,13 @@ export const Dashboard = ({ magmaData }: {
 	const totalLoanOfAllVaults = magmaData ? magma.calculateTotalLoanOfAllVault(magmaData.vaults) : 0;
 
 	const handleOpenVault = (token: string) => {
-		window.location.href = "/borrow?token=" + token;
+		window.localStorage.setItem(globalContants.TARGET_TOKEN, token);
+		window.location.href = "/borrow";
 	};
 
 	const handleOpenPool = (token: string) => {
-		window.location.href = "/stake?token=" + token;
+		window.localStorage.setItem(globalContants.TARGET_TOKEN, token);
+		window.location.href = "/stake";
 	};
 
 	return <div className="mainContainer dashboardLayout">

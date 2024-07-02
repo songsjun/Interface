@@ -6,7 +6,7 @@ import { Coin } from "../libs/types";
 import { PoolView } from "./PoolView";
 import { magma } from "../libs/magma";
 import { TokenStakedCard } from "./TokenStakedCard";
-import { useSearchParams } from "react-router-dom";
+import { globalContants } from "../libs/globalContants";
 
 export const StakeView = ({ refreshTrigger, magmaData }: {
 	refreshTrigger: () => void;
@@ -16,8 +16,6 @@ export const StakeView = ({ refreshTrigger, magmaData }: {
 	const tokens = Object.values(magma.tokens) || [];
 	const [magmaDataForSingleToken, setMagmaDataForSingleToken] = useState<Record<string, any>>();
 	const [currentMarket, setCurrentMarket] = useState<Coin>();
-	const [searchParams] = useSearchParams();
-	const tokenArg = searchParams.get("token")
 
 	const readyForOpenningMarket = (token: string) => {
 		setCurrentMarket(magma.tokens[token]);
@@ -40,14 +38,14 @@ export const StakeView = ({ refreshTrigger, magmaData }: {
 
 	useEffect(() => {
 		if (currentMarket && magmaDataForSingleToken && magmaData) {
-			readyForOpenningMarket(currentMarket.symbol);
+			return readyForOpenningMarket(currentMarket.symbol);
 		}
 
-		setTimeout(() => {
-			if (magmaData && tokenArg && tokens?.length > 0 && tokens.findIndex(item => item.symbol === tokenArg) >= 0) {
-				readyForOpenningMarket(tokenArg);
-			}
-		}, 1000);
+		const targetToken = window.localStorage.getItem(globalContants.TARGET_TOKEN);
+		if (magmaData && targetToken && tokens?.length > 0 && tokens.findIndex(item => item.symbol === targetToken) >= 0) {
+			readyForOpenningMarket(targetToken);
+			window.localStorage.removeItem(globalContants.TARGET_TOKEN);
+		}
 	}, [magmaData])
 
 	const handleOpenPool = (token: string) => {
@@ -76,7 +74,7 @@ export const StakeView = ({ refreshTrigger, magmaData }: {
 						token={token}
 						magmaData={magmaData}
 						onOpenPool={handleOpenPool}
-						title={t("stabilityPool")} 
+						title={t("stabilityPool")}
 						showIcon={true} />
 				})}
 			</div>
