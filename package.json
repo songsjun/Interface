@@ -1,6 +1,6 @@
 {
   "name": "magma-ui",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "private": true,
   "type": "module",
   "dependencies": {
@@ -43,7 +43,7 @@
     "analyze": "source-map-explorer 'build/static/js/*.js'",
     "start": "vite",
     "dev": "cross-env vite --force",
-    "build": "run-s 'build:*'",
+    "build": "npm run build:vite",
     "build:set-version": "node scripts/set-version.cjs",
     "build:tsc": "tsc --project ./tsconfig.node.json",
     "build:vite": "vite build",

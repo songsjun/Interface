@@ -130,11 +130,19 @@ export const MarketView = ({
 
 		setTimeout(() => {
 			const query = graphqlAsker.requestTroveChanges(account)
-			graphqlAsker.ask(chainId, query, (data: any) => {
-				if (data.troveChanges) {
-					setTxs(data.troveChanges);
-				}
-			});
+			console.debug("xxx", query, market);
+
+			graphqlAsker.ask(
+				chainId,
+				query,
+				(data: any) => {
+					if (data.troveChanges) {
+						setTxs(data.troveChanges);
+					}
+				},
+				undefined,
+				market
+			);
 		}, 1000);
 	}, [account, chainId]);
 
@@ -652,7 +660,8 @@ export const MarketView = ({
 					</div>
 				</div>
 
-				{txs?.length > 0 && <div
+				{/* 暂时只有IOTX有历史记录。 */}
+				{market.symbol === IOTX.symbol && txs?.length > 0 && <div
 					className="card"
 					style={{ gap: "24px" }}>
 					<div className="flex-row-space-between">
@@ -672,7 +681,8 @@ export const MarketView = ({
 			</div>
 		</div>
 
-		{changes?.length > 0 && <div
+		{/* 暂时只有IOTX有历史记录。 */}
+		{market.symbol === IOTX.symbol && changes?.length > 0 && <div
 			className="flex-column-align-left"
 			style={{ gap: "24px" }}>
 			<h3>{t("chart")}</h3>
