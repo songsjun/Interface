@@ -53,7 +53,7 @@ export const MarketView = ({
 	}
 	const vaultsCount = magmaData.vaultsCount;
 	const fees = { borrowingRate: magmaData.borrowingRateWithDecay };
-	const { walletClient, chainId, liquity, account } = useLiquity()
+	const { walletClient, chainId, account } = useLiquity()
 	const [txHash, setTxHash] = useState("");
 	const [showDepositModal, setShowDepositModal] = useState(false);
 	const [depositAndBorrow, setDepositAndBorrow] = useState(true);
@@ -288,7 +288,7 @@ export const MarketView = ({
 		await walletClient?.watchAsset({
 			type: "ERC20",
 			options: {
-				address: liquity.connection.addresses.lusdToken,
+				address: (appConfig.magma as JsonObject)[String(chainId)].lusdToken,
 				decimals: WEN.decimals || 18,
 				symbol: WEN.symbol
 			}

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { BaseProvider, JsonRpcSigner } from "@ethersproject/providers";
-import { PublicClient, useAccount, useChainId, usePublicClient, useWalletClient } from "wagmi";
+import { PublicClient, WalletClient, useAccount, useChainId, usePublicClient, useWalletClient } from "wagmi";
 import { useEthersProvider, useEthersSigner } from "../libs/ethers";
 import { VoidSigner, ethers } from "ethers";
 import { globalContants } from "../libs/globalContants";
@@ -14,6 +14,7 @@ type LiquityContextValue = {
   urlSearch?: string;
   signer: ethers.Signer | undefined | JsonRpcSigner;
   frontendTag: string;
+  walletClient: WalletClient;
 };
 
 const LiquityContext = createContext<LiquityContextValue | undefined>(undefined);
@@ -76,7 +77,8 @@ export const LiquityProvider: React.FC<LiquityProviderProps> = ({
       publicClient,
       urlSearch,
       signer: wagmiSinger,
-      frontendTag
+      frontendTag,
+      walletClient: signer.data as WalletClient
     }}>
     {children}
   </LiquityContext.Provider>
