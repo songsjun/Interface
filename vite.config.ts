@@ -23,7 +23,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      assert: "rollup-plugin-node-polyfills/polyfills/assert",
+      // assert: "rollup-plugin-node-polyfills/polyfills/assert",
       // events: "rollup-plugin-node-polyfills/polyfills/events"
     }
   },
@@ -34,7 +34,7 @@ export default defineConfig({
     deps: {
       inline: [
         // "connectkit", // fixes import of "react/jsx-runtime"
-        "rollup-plugin-node-polyfills"
+        // "rollup-plugin-node-polyfills"
       ]
     },
     testTimeout: 10000,

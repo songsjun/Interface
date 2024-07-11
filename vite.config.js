@@ -34,7 +34,7 @@ export default defineConfig({
         deps: {
             inline: [
                 // "connectkit", // fixes import of "react/jsx-runtime"
-                "rollup-plugin-node-polyfills"
+                // "rollup-plugin-node-polyfills"
             ]
         },
         testTimeout: 10000,

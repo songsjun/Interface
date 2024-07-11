@@ -3,7 +3,6 @@ import appConfig from "../appConfig.json";
 import { Coin, JsonObject } from "../libs/types";
 import BigNumber from "bignumber.js";
 import { IOTX, globalContants } from "../libs/globalContants";
-import assert from "assert";
 
 export const shortenAddress = (address: string, b = 6, e = 4) => address.substr(0, b) + "..." + address.substr(-e);
 
@@ -96,13 +95,13 @@ export const formatPercent = (value: number) => {
 };
 
 export function* generateTrials(totalNumberOfTrials: number, chainId: number) {
-	assert(Number.isInteger(totalNumberOfTrials) && totalNumberOfTrials > 0);
+	if (Number.isInteger(totalNumberOfTrials) && totalNumberOfTrials > 0) {
+		while (totalNumberOfTrials) {
+			const numberOfTrials = Math.min(totalNumberOfTrials, (appConfig.constants as JsonObject)[String(chainId)].maxNumberOfTrialsAtOnce);
+			yield numberOfTrials;
 
-	while (totalNumberOfTrials) {
-		const numberOfTrials = Math.min(totalNumberOfTrials, (appConfig.constants as JsonObject)[String(chainId)].maxNumberOfTrialsAtOnce);
-		yield numberOfTrials;
-
-		totalNumberOfTrials -= numberOfTrials;
+			totalNumberOfTrials -= numberOfTrials;
+		}
 	}
 }
 
