@@ -14,6 +14,7 @@ import { graphqlAsker } from "../libs/graphqlAsker";
 import { StabilityTransactionListItem } from "./StabilityTransactionListItem";
 import { formatAsset, formatAssetAmount, formatCurrency, formatPercent } from "../utils";
 import BigNumber from "bignumber.js";
+import { magma } from "../libs/magma";
 
 type ModalOpenning = {
 	action: ModalAction;
@@ -131,11 +132,15 @@ export const PoolView = ({ market, magmaData, refreshTrigger }: {
 	};
 
 	const handleClaim = () => {
-		// if (sendTransaction) {
-		// 	setAmountInTx(Number(stabilityDeposit.lqtyReward.toString(2)));
-
-		// 	return sendTransaction();
-		// }
+		magma.unstake(
+			market,
+			globalContants.BIG_NUMBER_0,
+			undefined,
+			undefined,
+			() => {
+				return refreshTrigger && refreshTrigger();
+			}
+		);
 	};
 
 	return <>
