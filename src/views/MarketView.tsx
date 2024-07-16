@@ -276,6 +276,7 @@ export const MarketView = ({
 
 	const handleCloseClosureModal = () => {
 		setShowCloseModal(false);
+		return refreshTrigger && refreshTrigger();
 	};
 
 	const handleGoBackVault = () => {
