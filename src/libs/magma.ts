@@ -56,8 +56,8 @@ export const magma: {
 	closeVault: (token: Coin, onWait?: (tx: string) => void, onFail?: (error: Error | any) => void, onDone?: (tx: string) => void) => void;
 	stake: (token: Coin, amount: BigNumber, frontendTag: string, onWait?: (tx: string) => void, onFail?: (error: Error | any) => void, onDone?: (tx: string) => void) => void;
 	unstake: (token: Coin, amount: BigNumber, onWait?: (tx: string) => void, onFail?: (error: Error | any) => void, onDone?: (tx: string) => void) => void;
-	swap: (wenAmount: BigNumber, collateralPrice: number, onWait?: (tx: string) => void, onFail?: (error: Error | any) => void, onDone?: (tx: string) => void) => Promise<void>;
-	getRedemptionFeeWithDecay: (amount: BigNumber) => Promise<BigNumber>;
+	swap: (wenAmount: BigNumber, collateralPrice: number, onWait?: (tx: string) => void, onFail?: (error: Error | any) => void, onDone?: (tx: string) => void, market?: Coin) => void;
+	getRedemptionFeeWithDecay: (amount: BigNumber, market: Coin) => Promise<BigNumber>;
 	getTotalCollateralRatio: (collateralToken?: Coin) => number;
 	liquidate: (onWait?: (tx: string) => void, onFail?: (error: Error | any) => void, onDone?: (tx: string) => void) => void;
 	calculateTVL: () => number;
@@ -641,32 +641,43 @@ export const magma: {
 		// }
 	},
 
-	swap: async function (wenAmount, collateralPrice, onWait, onFail, onDone) {
-		let res = await this._hintHelpersContract?.dappFunctions.getRedemptionHints.call(wenAmount.toFixed(), BigNumber(collateralPrice).shiftedBy(18).toFixed(), 0);
-		const firstRedemptionHint = res.firstRedemptionHint;
-		const partialRedemptionHintNICR = BigNumber(res.partialRedemptionHintNICR._hex);
+	swap: function (wenAmount, collateralPrice, onWait, onFail, onDone, market = IOTX) {
+		const amount = wenAmount.toFixed();
 
-		res = await this._sortedTrovesContract?.dappFunctions.findInsertPosition.call(partialRedemptionHintNICR.toFixed(), this._account!, this._account!);
-		const upperPartialRedemptionHint = res[0];
-		const lowerPartialRedemptionHint = res[1];
-
-		this._troveManagerContract?.dappFunctions.redeemCollateral.run(
-			onWait,
+		this._lusdTokenContract?.dappFunctions.approve.run(
+			undefined,
 			onFail,
-			onDone,
-			{ from: this._account },
-			wenAmount.toFixed(),
-			firstRedemptionHint,
-			upperPartialRedemptionHint,
-			lowerPartialRedemptionHint,
-			partialRedemptionHintNICR.toFixed(),
-			0,
-			BigNumber(1).shiftedBy(WEN.decimals).toFixed()
+			async () => {
+				let res: any = await this._hintHelpersContract[market.symbol]?.dappFunctions.getRedemptionHints.call(wenAmount.toFixed(), BigNumber(collateralPrice).shiftedBy(18).toFixed(), 0);
+				const firstRedemptionHint = res.firstRedemptionHint;
+				const partialRedemptionHintNICR = BigNumber(res.partialRedemptionHintNICR._hex);
+
+				res = await this._sortedTrovesContract[market.symbol]?.dappFunctions.findInsertPosition.call(partialRedemptionHintNICR.toFixed(), this._account!, this._account!);
+				const upperPartialRedemptionHint = res[0];
+				const lowerPartialRedemptionHint = res[1];
+
+				this._troveManagerContract[market.symbol]?.dappFunctions.redeemCollateral.run(
+					onWait,
+					onFail,
+					onDone,
+					{ from: this._account },
+					amount,
+					firstRedemptionHint,
+					upperPartialRedemptionHint,
+					lowerPartialRedemptionHint,
+					partialRedemptionHintNICR.toFixed(),
+					0,
+					BigNumber(1).shiftedBy(WEN.decimals).toFixed()
+				);
+			},
+			undefined,
+			this._troveManagerContract[market.symbol].address,
+			amount
 		);
 	},
 
-	getRedemptionFeeWithDecay: async function (amount): Promise<BigNumber> {
-		const res = await this._troveManagerContract?.dappFunctions.getRedemptionFeeWithDecay.call(amount.toFixed());
+	getRedemptionFeeWithDecay: async function (amount, market = IOTX): Promise<BigNumber> {
+		const res: any = await this._troveManagerContract[market.symbol]?.dappFunctions.getRedemptionFeeWithDecay.call(amount.toFixed());
 		return BigNumber(res._hex);
 	},
 

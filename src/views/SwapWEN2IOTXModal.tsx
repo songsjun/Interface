@@ -11,20 +11,22 @@ import { SnackBar } from "../components/SnackBar";
 import BigNumber from "bignumber.js";
 import { formatAsset, formatAssetAmount, formatNumber, formatPercent } from "../utils";
 import { magma } from "../libs/magma";
-import { ErrorMessage } from "../libs/types";
+import { Coin, ErrorMessage } from "../libs/types";
 
 export const SwapWEN2IOTXModal = ({
 	isOpen = false,
 	onClose = () => { },
 	onDone = () => { },
 	max,
-	price
+	price,
+	market = IOTX
 }: {
 	isOpen: boolean;
 	onClose: () => void;
 	onDone: (tx: string, swapInput: number) => void;
 	max: BigNumber;
 	price: number;
+	market: Coin;
 }) => {
 	const { t } = useLang();
 	const [valueForced, setValueForced] = useState(-1);
@@ -41,11 +43,13 @@ export const SwapWEN2IOTXModal = ({
 
 	useEffect(() => {
 		const getData = async () => {
-			const res = await magma.getRedemptionFeeWithDecay(swapAmount);
+			const res = await magma.getRedemptionFeeWithDecay(swapAmount, market);
 			if (res) setFee(res);
 		}
 
-		getData();
+		if (swapAmount.gt(0)) {
+			getData();
+		}
 	}, [swapAmount]);
 
 	const handleMax = () => {

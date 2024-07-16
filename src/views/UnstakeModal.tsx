@@ -162,7 +162,7 @@ export const UnstakeModal = ({
 			style={{ width: "100%" }}
 			disabled={unstakeInput === 0 || sending}
 			onClick={handleUnstake}>
-			{(sending ? (t("unstakeing") + "...") : t("unstake")) + " " + WEN.symbol}
+			{(sending ? (t("unstaking") + "...") : t("unstake")) + " " + WEN.symbol}
 		</button>
 	</Modal> : <></>
 };
