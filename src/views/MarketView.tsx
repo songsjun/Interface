@@ -231,6 +231,8 @@ export const MarketView = ({
 		setShowRepayModal(false);
 		setShowRepayDoneModal(true);
 		setRepaidAmount(repayAmount);
+
+		return refreshTrigger && refreshTrigger();
 	};
 
 	const handleWithdrawDone = (tx: string, withdrawAmount: number) => {
@@ -238,6 +240,8 @@ export const MarketView = ({
 		setShowWithdrawModal(false);
 		setShowWithdrawDoneModal(true);
 		setWithdrawnAmount(withdrawAmount);
+
+		return refreshTrigger && refreshTrigger();
 	};
 
 	const handleBorrow = (evt: React.MouseEvent<HTMLButtonElement>) => {
