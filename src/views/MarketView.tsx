@@ -130,8 +130,6 @@ export const MarketView = ({
 
 		setTimeout(() => {
 			const query = graphqlAsker.requestTroveChanges(account)
-			console.debug("xxx", query, market);
-
 			graphqlAsker.ask(
 				chainId,
 				query,

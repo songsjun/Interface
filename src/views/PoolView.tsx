@@ -91,6 +91,8 @@ export const PoolView = ({ market, magmaData, refreshTrigger }: {
 		setTxResult(null);
 		setTxHash("");
 		setAmountInTx(0);
+
+		return refreshTrigger && refreshTrigger();
 	};
 
 	const handleWatchAsset = async () => {

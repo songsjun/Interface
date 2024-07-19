@@ -641,38 +641,29 @@ export const magma: {
 		// }
 	},
 
-	swap: function (wenAmount, collateralPrice, onWait, onFail, onDone, market = IOTX) {
+	swap: async function (wenAmount, collateralPrice, onWait, onFail, onDone, market = IOTX) {
 		const amount = wenAmount.toFixed();
 
-		this._lusdTokenContract?.dappFunctions.approve.run(
-			undefined,
+		let res: any = await this._hintHelpersContract[market.symbol]?.dappFunctions.getRedemptionHints.call(wenAmount.toFixed(), BigNumber(collateralPrice).shiftedBy(18).toFixed(), 0);
+		const firstRedemptionHint = res.firstRedemptionHint;
+		const partialRedemptionHintNICR = BigNumber(res.partialRedemptionHintNICR._hex);
+
+		res = await this._sortedTrovesContract[market.symbol]?.dappFunctions.findInsertPosition.call(partialRedemptionHintNICR.toFixed(), this._account!, this._account!);
+		const upperPartialRedemptionHint = res[0];
+		const lowerPartialRedemptionHint = res[1];
+
+		this._troveManagerContract[market.symbol]?.dappFunctions.redeemCollateral.run(
+			onWait,
 			onFail,
-			async () => {
-				let res: any = await this._hintHelpersContract[market.symbol]?.dappFunctions.getRedemptionHints.call(wenAmount.toFixed(), BigNumber(collateralPrice).shiftedBy(18).toFixed(), 0);
-				const firstRedemptionHint = res.firstRedemptionHint;
-				const partialRedemptionHintNICR = BigNumber(res.partialRedemptionHintNICR._hex);
-
-				res = await this._sortedTrovesContract[market.symbol]?.dappFunctions.findInsertPosition.call(partialRedemptionHintNICR.toFixed(), this._account!, this._account!);
-				const upperPartialRedemptionHint = res[0];
-				const lowerPartialRedemptionHint = res[1];
-
-				this._troveManagerContract[market.symbol]?.dappFunctions.redeemCollateral.run(
-					onWait,
-					onFail,
-					onDone,
-					{ from: this._account },
-					amount,
-					firstRedemptionHint,
-					upperPartialRedemptionHint,
-					lowerPartialRedemptionHint,
-					partialRedemptionHintNICR.toFixed(),
-					0,
-					BigNumber(1).shiftedBy(WEN.decimals).toFixed()
-				);
-			},
-			undefined,
-			this._troveManagerContract[market.symbol].address,
-			amount
+			onDone,
+			{ from: this._account },
+			amount,
+			firstRedemptionHint,
+			upperPartialRedemptionHint,
+			lowerPartialRedemptionHint,
+			partialRedemptionHintNICR.toFixed(),
+			0,
+			BigNumber(1).shiftedBy(WEN.decimals).toFixed()
 		);
 	},
 

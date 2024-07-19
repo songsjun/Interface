@@ -19,7 +19,7 @@ export const SwapWEN2IOTXModal = ({
 	onDone = () => { },
 	max,
 	price,
-	market = IOTX
+	market
 }: {
 	isOpen: boolean;
 	onClose: () => void;
@@ -83,7 +83,8 @@ export const SwapWEN2IOTXModal = ({
 			tx => {
 				setSending(false);
 				return onDone && onDone(tx, swapInput);
-			}
+			},
+			market
 		);
 	};
 
