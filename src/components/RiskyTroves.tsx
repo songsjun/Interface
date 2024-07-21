@@ -18,7 +18,7 @@ import { magma } from "../libs/magma";
 
 type RiskyTrovesProps = {
   pageSize: number;
-  constants?: Record<string, any> | any;
+  magmaData?: Record<string, any> | any;
   refreshTrigger: () => void;
 };
 
@@ -33,15 +33,15 @@ type RiskyTrovesProps = {
 //   blockTag
 // });
 
-export const RiskyTroves: React.FC<RiskyTrovesProps> = ({ pageSize, constants }) => {
-  if (!constants) return <></>
+export const RiskyTroves: React.FC<RiskyTrovesProps> = ({ pageSize, magmaData }) => {
+  if (!magmaData) return <></>
 
   const { t } = useLang();
   const {
     recoveryMode,
     totalCollateralRatio,
     price
-  } = constants; // useLiquitySelector(select);
+  } = magmaData;
   const factor = 0.95;
   const { chainId, publicClient } = useLiquity();
   const [loading, setLoading] = useState(true);
@@ -50,8 +50,9 @@ export const RiskyTroves: React.FC<RiskyTrovesProps> = ({ pageSize, constants })
   // const [reload, setReload] = useState(false);
   const [page, setPage] = useState(0);
   const appConfigConstants = (appConfig.constants as JsonObject)[String(chainId)];
-  // const mcr = constants?.MCR?.gt(0) ? constants.MCR : Decimal.from((appConfig.constants as JsonObject)[String(chainId)].MAGMA_MINIMUM_COLLATERAL_RATIO);
-  const mcr = constants?.MCR > 0 ? constants?.MCR : appConfigConstants.MAGMA_MINIMUM_COLLATERAL_RATIO;
+  const mcr = magmaData?.MCR > 0 ? magmaData?.MCR : appConfigConstants.MAGMA_MINIMUM_COLLATERAL_RATIO;
+  // const CCR = magmaData?.collTokenCCR[market.symbol] ?? appConfigConstants.MAGMA_CRITICAL_COLLATERAL_RATIO;
+  // const MCR = magmaData?.collTokenMCR[market.symbol] ?? appConfigConstants.MAGMA_MINIMUM_COLLATERAL_RATIO;
   // const [fromIndex, setFromIndex] = useState(0);
   // const [previousBatchCount, setPreviousBatchCount] = useState(0);
   const [liquidatableVaults, setLiquidatableVaults] = useState<LiquidatableTrove[]>([]);
@@ -221,8 +222,8 @@ export const RiskyTroves: React.FC<RiskyTrovesProps> = ({ pageSize, constants })
 
     magma.liquidate(
       undefined,
-			undefined,
-			undefined
+      undefined,
+      undefined
     );
   };
 

@@ -60,8 +60,8 @@ export const TokenCard = ({ token, magmaData, onOpenVault, title, showIcon = tru
 
 	const recoveryMode = magmaData?.recoveryMode[token.symbol];
 	const appConfigConstants = (appConfig.constants as JsonObject)[String(chainId)];
-	const CCR = magmaData?.CCR > 0 ? magmaData?.CCR : appConfigConstants.MAGMA_CRITICAL_COLLATERAL_RATIO;
-	const MCR = magmaData?.MCR > 0 ? magmaData?.MCR : appConfigConstants.MAGMA_MINIMUM_COLLATERAL_RATIO;
+	const CCR = magmaData?.collTokenCCR[token.symbol] ?? appConfigConstants.MAGMA_CRITICAL_COLLATERAL_RATIO;
+	const MCR = magmaData?.collTokenMCR[token.symbol] ?? appConfigConstants.MAGMA_MINIMUM_COLLATERAL_RATIO;
 	const appLiquidationPoint = recoveryMode ? CCR : appConfigConstants.appMCR;
 	const availableWithdrawal = vault?.getAvailableWithdrawal(price, appLiquidationPoint) || globalContants.BIG_NUMBER_0;
 	const availableWithdrawalDecimals = formatAssetAmount(availableWithdrawal, token.decimals);

@@ -32,6 +32,7 @@ export const magma: {
 	_currentChainId: number;
 	_magmaCfg: JsonObject;
 	_tokensAsKey: string[];
+	_tokenEntriesAsKey: any[];
 	_multicallContract?: DappContract;
 	_lusdTokenContract?: DappContract;
 	_sysConfigContract?: DappContract;
@@ -76,6 +77,7 @@ export const magma: {
 	_currentChainId: globalContants.DEFAULT_NETWORK_ID,
 	_magmaCfg: {},
 	_tokensAsKey: [],
+	_tokenEntriesAsKey: [],
 	vaults: [],
 	tokens: {},
 	magmaData: {
@@ -88,7 +90,9 @@ export const magma: {
 		TVL: {},
 		entireSystemDebt: {},
 		recoveryMode: {},
-		balance: {}
+		balance: {},
+		collTokenMCR: {},
+		collTokenCCR: {}
 	},
 	_borrowingRate: {},
 	_wenGasCompensation: globalContants.BIG_NUMBER_0,
@@ -107,6 +111,7 @@ export const magma: {
 		this._currentChainId = chainId;
 		this._magmaCfg = (appConfig.magma as JsonObject)[String(chainId)];
 		this._tokensAsKey = Object.keys(this._magmaCfg.tokens);
+		this._tokenEntriesAsKey = Object.entries(this._magmaCfg.tokens);
 
 		if (account) this._account = account;
 
@@ -128,6 +133,8 @@ export const magma: {
 	getVaults: function (forceReload = false, fromIndex = 0, doneCallback) {
 		if (this.vaults.length === 0 || forceReload) {
 			const query = graphqlAsker.requestVaults(fromIndex);
+			console.debug("xxx query =", query);
+
 			graphqlAsker.ask(this._currentChainId, query, (data: any) => {
 				if (data?.troves) {
 					data.troves.forEach((vault: JsonObject) => {
@@ -244,7 +251,7 @@ export const magma: {
 			this.borrowerOperationsContract = new DappContract(this._magmaCfg.borrowerOperations, borrowerOperationsAbi, this._signer);
 		}
 
-		Object.entries(this._magmaCfg.tokens).forEach((token: any) => {
+		this._tokenEntriesAsKey.forEach((token: any) => {
 			const key = token[0];
 			const tokenCfg = token[1];
 
@@ -320,7 +327,7 @@ export const magma: {
 			}
 		} as callRequest);
 
-		Object.entries(this._magmaCfg.tokens).forEach(items => {
+		this._tokenEntriesAsKey.forEach(items => {
 			const key = items[0];
 			const tokenCfg: any = items[1];
 			const theTroveManagerContract = this._troveManagerContract[key];
@@ -465,7 +472,9 @@ export const magma: {
 	},
 
 	_getMagmaDataStep2: async function (): Promise<void> {
-		this._tokensAsKey.forEach(key => {
+		this._tokenEntriesAsKey.forEach(items => {
+			const key = items[0];
+			const tokenCfg: any = items[1];
 			const theTroveManagerContract = this._troveManagerContract[key];
 
 			multicaller.addCall({
@@ -475,6 +484,30 @@ export const magma: {
 					this.magmaData.recoveryMode[key] = Boolean(BigNumber(args as string).toNumber());
 				}
 			} as callRequest);
+
+			if (tokenCfg.address === zeroAddress) {
+				this.magmaData.collTokenCCR[key] = this.magmaData.CCR;
+			} else {
+				multicaller.addCall({
+					contractAddress: this._sysConfigContract?.address,
+					call: this._sysConfigContract?.dappFunctions.getCollTokenCCR.encode(tokenCfg.address, BigNumber(this.magmaData.CCR).shiftedBy(18).toFixed()),
+					parseFunc: args => {
+						this.magmaData.collTokenCCR[key] = BigNumber(args as string).shiftedBy(-18).toNumber();
+					}
+				} as callRequest);
+			}
+
+			if (tokenCfg.address === zeroAddress) {
+				this.magmaData.collTokenMCR[key] = this.magmaData.MCR;
+			} else {
+				multicaller.addCall({
+					contractAddress: this._sysConfigContract?.address,
+					call: this._sysConfigContract?.dappFunctions.getCollTokenMCR.encode(tokenCfg.address, BigNumber(this.magmaData.MCR).shiftedBy(18).toFixed()),
+					parseFunc: args => {
+						this.magmaData.collTokenMCR[key] = BigNumber(args as string).shiftedBy(-18).toNumber();
+					}
+				} as callRequest);
+			}
 		});
 
 		await multicaller.batchingCall();
