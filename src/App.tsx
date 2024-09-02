@@ -19,7 +19,13 @@ const { chains, publicClient, webSocketPublicClient } = configureChains(
 
 const wagmiCfg = createConfig({
   connectors: [
-    new InjectedConnector({ chains }),
+    new InjectedConnector({
+      chains,
+      options: {
+        name: window?.okxwallet ? "OKX Wallet" : "MetaMask",
+        getProvider: () => window?.okxwallet ?? window.ethereum,
+      }
+    }),
     new WalletConnectConnector({
       chains,
       options: {
