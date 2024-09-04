@@ -1,9 +1,10 @@
 import { useEffect } from "react";
-import { configureChains, WagmiConfig, createConfig } from "wagmi";
+import { configureChains, WagmiConfig, createConfig, WindowProvider } from "wagmi";
 import { iotexTestnet, iotex } from "wagmi/chains";
 import { publicProvider } from "wagmi/providers/public";
 import { InjectedConnector } from "wagmi/connectors/injected";
 import { WalletConnectConnector } from "wagmi/connectors/walletConnect";
+import { MetaMaskConnector } from "wagmi/connectors/metaMask";
 import { SafeConnector } from "wagmi/connectors/safe"
 import { LiquityProvider } from "./hooks/LiquityContext";
 import { getConfig } from "./config";
@@ -31,7 +32,13 @@ const { chains, publicClient, webSocketPublicClient } = configureChains(
 
 const wagmiCfg = createConfig({
   connectors: [
-    new InjectedConnector({ chains }),
+    new InjectedConnector({
+      chains,
+      options: {
+        name: window?.okxwallet ? "OKX Wallet" : "MetaMask",
+        getProvider: () => window?.okxwallet ?? window.ethereum,
+      }
+    }),
     new WalletConnectConnector({
       chains,
       options: {
